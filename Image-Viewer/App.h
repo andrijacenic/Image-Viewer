@@ -24,6 +24,7 @@ public:
 	void update();
 
 	void drawImage();
+	void drawImageStrip();
 private:
 	int argc;
 	char** argv;

@@ -40,6 +40,13 @@ public:
 	void loadImage(Image* image);
 	Image getCurrentImage();
 	Image getImageAt(int i);
-
+	int getNumberOfImages() { return images.size(); }
+	int getCurrentImageIndex() { return selectedIndex; }
+	void next() {
+		selectedIndex = (selectedIndex + 1) % images.size();
+	}
+	void prev() {
+		selectedIndex = (selectedIndex - 1) % images.size();
+	}
 };
 

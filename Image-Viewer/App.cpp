@@ -82,6 +82,7 @@ int App::start()
 	}
 	glfwMakeContextCurrent(window);
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+		App::windowMutex.unlock();
 		return -1;
 	}
 	IMGUI_CHECKVERSION();
@@ -92,7 +93,7 @@ int App::start()
 	ImGui_ImplOpenGL3_Init("#version 330");
 
 	std::thread t([]() {
-		ImageLoader::getInstance()->loadImages("C:\\Users\\Andrija Cenic\\Desktop\\2.jpg");
+		ImageLoader::getInstance()->loadImages("C:\\Users\\Andrija Cenic\\Desktop\\1.jpg");
 	});
 	t.detach();
 	App::windowMutex.unlock();
@@ -102,15 +103,18 @@ int App::start()
 void App::update()
 {
 	drawImage();
+	drawImageStrip();
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
 		{
 			if (ImGui::MenuItem("Open"))
 			{
+				ImageLoader::getInstance()->next();
 			}
 			if (ImGui::MenuItem("Save"))
 			{
+				ImageLoader::getInstance()->prev();
 			}
 			ImGui::EndMenu();
 		}
@@ -164,4 +168,52 @@ void App::drawImage()
 	int y = (h - ih) >> 1;
 
 	draw->AddImage((void*)currImage.texId, { (float)x,(float)y }, { (float)x + iw, (float)y + ih });
+}
+
+void App::drawImageStrip()
+{
+	ImDrawList* draw = ImGui::GetBackgroundDrawList();
+	int selected = ImageLoader::getInstance()->getCurrentImageIndex();
+	int w, h, x, y, vw;
+	glfwGetFramebufferSize(window, &vw, &h);
+	y = h * 5 / 6;
+	h = h * 1 / 6;
+	w = h * 2 / 3;
+	x = vw/2-selected * (w+10) - w/2;
+	int n = ImageLoader::getInstance()->getNumberOfImages();
+	for (int i = 0; i < n; i++) {
+		Image img = ImageLoader::getInstance()->getImageAt(i);
+		double scale = 1;
+		int ih = img.h, iw = img.w;
+		if (h < w) {
+			if (ih > iw)
+				scale = ((double)h) / ih;
+			else
+				scale = ((double)w) / iw;
+		}
+		else {
+			if (ih < iw)
+				scale = ((double)w) / iw;
+			else
+				scale = ((double)h) / ih;
+		}
+		iw = scale * img.w;
+		ih = scale * img.h;
+		if (i == selected) {
+			draw->AddRectFilled({ (float)x + (w+10) * i, (float)y}, {(float)x + w * (i+1) , (float)y + h}, IM_COL32(200, 200, 200, 255));
+
+		}
+		if (img.texId == -1) {
+			draw->AddRectFilled({ (float)x + (w + 10) * i, (float)y }, { (float)x + w * (i + 1) , (float)y + h }, IM_COL32(10, 10, 10, 255));
+		}
+		else {
+			float startY = (float)(y + ((h - ih) >> 1));
+			float startX = (float)x + (w + 10) * i;
+
+			float endY = startY + ih;
+			float endX = startX + iw;
+
+			draw->AddImage((void*)img.texId, { startX, startY}, {endX , endY});
+		}
+	}
 }
