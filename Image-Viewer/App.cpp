@@ -78,6 +78,7 @@ int App::start()
 	window = glfwCreateWindow(1200, 800, "Example", nullptr, nullptr);
 	if (!window) {
 		glfwTerminate();
+		App::windowMutex.unlock();
 		return -1;
 	}
 	glfwMakeContextCurrent(window);
@@ -85,6 +86,7 @@ int App::start()
 		App::windowMutex.unlock();
 		return -1;
 	}
+	glfwSetKeyCallback(window, keyPressed);
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
@@ -110,7 +112,6 @@ void App::update()
 		{
 			if (ImGui::MenuItem("Open"))
 			{
-				ImageLoader::getInstance()->next();
 			}
 			if (ImGui::MenuItem("Save"))
 			{
@@ -148,20 +149,8 @@ void App::drawImage()
 		return;
 	}
 
-	double scale = 1;
 	int ih = currImage.h, iw = currImage.w;
-	if (h < w) {
-		if (ih > iw)
-			scale = ((double)h) / ih;
-		else
-			scale = ((double)w) / iw;
-	}
-	else {
-		if (ih < iw)
-			scale = ((double)w) / iw;
-		else
-			scale = ((double)h) / ih;
-	}
+	double scale = std::min((double)h / (double)ih, (double)w / (double) iw);
 	iw = scale * currImage.w;
 	ih = scale * currImage.h;
 	int x = (w - iw) >> 1;
@@ -183,28 +172,12 @@ void App::drawImageStrip()
 	int n = ImageLoader::getInstance()->getNumberOfImages();
 	for (int i = 0; i < n; i++) {
 		Image img = ImageLoader::getInstance()->getImageAt(i);
-		double scale = 1;
 		int ih = img.h, iw = img.w;
-		if (h < w) {
-			if (ih > iw)
-				scale = ((double)h) / ih;
-			else
-				scale = ((double)w) / iw;
-		}
-		else {
-			if (ih < iw)
-				scale = ((double)w) / iw;
-			else
-				scale = ((double)h) / ih;
-		}
+		double scale = std::min((double)h / (double)ih, (double)w / (double)iw);
 		iw = scale * img.w;
 		ih = scale * img.h;
-		if (i == selected) {
-			draw->AddRectFilled({ (float)x + (w+10) * i, (float)y}, {(float)x + w * (i+1) , (float)y + h}, IM_COL32(200, 200, 200, 255));
-
-		}
 		if (img.texId == -1) {
-			draw->AddRectFilled({ (float)x + (w + 10) * i, (float)y }, { (float)x + w * (i + 1) , (float)y + h }, IM_COL32(10, 10, 10, 255));
+			draw->AddRectFilled({ (float)x + (w + 10) * i, (float)y }, { (float)x + (w+10) * (i + 1)-10 , (float)y + h }, IM_COL32(10, 10, 10, 255));
 		}
 		else {
 			float startY = (float)(y + ((h - ih) >> 1));
@@ -215,5 +188,15 @@ void App::drawImageStrip()
 
 			draw->AddImage((void*)img.texId, { startX, startY}, {endX , endY});
 		}
+		if (i == selected) {
+			draw->AddRect({ (float)x + (w+10) * i, (float)y}, {(float)x + (w+10) * (i+1)-10 , (float)y + h}, IM_COL32(200, 200, 200, 255));
+		}
 	}
+}
+void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (key == GLFW_KEY_LEFT && action == GLFW_RELEASE)
+		ImageLoader::getInstance()->prev();
+	else if (key == GLFW_KEY_RIGHT && action == GLFW_RELEASE)
+		ImageLoader::getInstance()->next();
 }

@@ -25,8 +25,11 @@ public:
 
 	void drawImage();
 	void drawImageStrip();
+
 private:
 	int argc;
 	char** argv;
 	Image currImage;
 };
+void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods);
+
