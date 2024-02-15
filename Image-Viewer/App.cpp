@@ -11,7 +11,7 @@ App::~App() {
 	if (window == nullptr)
 		return;
 
-	ImageLoader::deleteInstance();
+	ImageManagment::deleteInstance();
 
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
@@ -71,22 +71,22 @@ void App::runApp()
 
 int App::start()
 {
-	App::windowMutex.lock();
 	if (!glfwInit()) 
 		return -1;
 	glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE);
-	window = glfwCreateWindow(1200, 800, "Example", nullptr, nullptr);
+	window = glfwCreateWindow(1920, 1080, "Example", nullptr, nullptr);
 	if (!window) {
 		glfwTerminate();
-		App::windowMutex.unlock();
 		return -1;
 	}
+	App::windowMutex.lock();
 	glfwMakeContextCurrent(window);
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		App::windowMutex.unlock();
 		return -1;
 	}
 	glfwSetKeyCallback(window, keyPressed);
+	glfwSetScrollCallback(window, scroll);
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
@@ -95,7 +95,7 @@ int App::start()
 	ImGui_ImplOpenGL3_Init("#version 330");
 
 	std::thread t([]() {
-		ImageLoader::getInstance()->loadImages("C:\\Users\\Andrija Cenic\\Desktop\\1.jpg");
+		ImageManagment::getInstance()->loadImages("C:\\Users\\Andrija Cenic\\Desktop\\1.jpg");
 	});
 	t.detach();
 	App::windowMutex.unlock();
@@ -115,7 +115,7 @@ void App::update()
 			}
 			if (ImGui::MenuItem("Save"))
 			{
-				ImageLoader::getInstance()->prev();
+				ImageManagment::getInstance()->prev();
 			}
 			ImGui::EndMenu();
 		}
@@ -138,7 +138,7 @@ void App::drawImage()
 {
 	ImDrawList* draw = ImGui::GetBackgroundDrawList();
 	
-	currImage = ImageLoader::getInstance()->getCurrentImage();
+	currImage = ImageManagment::getInstance()->getCurrentImage();
 
 	int w, h;
 	glfwGetFramebufferSize(window, &w, &h);
@@ -148,30 +148,33 @@ void App::drawImage()
 		draw->AddRectFilled({ 0, 0 }, { (float)w , (float) h }, IM_COL32(10, 10, 10, 255));
 		return;
 	}
-
+	float zoom = ImageManagment::getInstance()->getZoom();
 	int ih = currImage.h, iw = currImage.w;
 	double scale = std::min((double)h / (double)ih, (double)w / (double) iw);
 	iw = scale * currImage.w;
 	ih = scale * currImage.h;
-	int x = (w - iw) >> 1;
-	int y = (h - ih) >> 1;
+	int x = ((w - iw) >> 1) + ImageManagment::getInstance()->getTranslationX();
+	int y = ((h - ih) >> 1) + ImageManagment::getInstance()->getTranslationY();
 
-	draw->AddImage((void*)currImage.texId, { (float)x,(float)y }, { (float)x + iw, (float)y + ih });
+	draw->AddImage((void*)currImage.texId, { (float)x + (1.0f - zoom) * iw,(float)y + (1.0f - zoom) * ih }, {(float)x + iw * zoom - (1.0f - zoom) * iw, (float)y + ih * zoom - (1.0f - zoom) * ih });
 }
 
 void App::drawImageStrip()
 {
 	ImDrawList* draw = ImGui::GetBackgroundDrawList();
-	int selected = ImageLoader::getInstance()->getCurrentImageIndex();
+	int selected = ImageManagment::getInstance()->getCurrentImageIndex();
 	int w, h, x, y, vw;
 	glfwGetFramebufferSize(window, &vw, &h);
 	y = h * 5 / 6;
 	h = h * 1 / 6;
 	w = h * 2 / 3;
 	x = vw/2-selected * (w+10) - w/2;
-	int n = ImageLoader::getInstance()->getNumberOfImages();
+
+	draw->AddRectFilled({ (float)0, (float)y }, { (float)vw, (float)y + h }, IM_COL32(10, 10, 10, 140));
+
+	int n = ImageManagment::getInstance()->getNumberOfImages();
 	for (int i = 0; i < n; i++) {
-		Image img = ImageLoader::getInstance()->getImageAt(i);
+		Image img = ImageManagment::getInstance()->getImageAt(i);
 		int ih = img.h, iw = img.w;
 		double scale = std::min((double)h / (double)ih, (double)w / (double)iw);
 		iw = scale * img.w;
@@ -196,7 +199,35 @@ void App::drawImageStrip()
 void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	if (key == GLFW_KEY_LEFT && action == GLFW_RELEASE)
-		ImageLoader::getInstance()->prev();
+		ImageManagment::getInstance()->prev();
 	else if (key == GLFW_KEY_RIGHT && action == GLFW_RELEASE)
-		ImageLoader::getInstance()->next();
+		ImageManagment::getInstance()->next();
+
+	float x = 0, y = 0;
+	if (key == GLFW_KEY_W && action == GLFW_PRESS) {
+		y += 10;
+	}
+	if (key == GLFW_KEY_S && action == GLFW_PRESS) {
+		y -= 10;
+	}
+	if (key == GLFW_KEY_A && action == GLFW_PRESS) {
+		x += 10;
+	}
+	if (key == GLFW_KEY_D && action == GLFW_PRESS) {
+		x -= 10;
+	}
+	ImageManagment::getInstance()->addTranslation(x, y);
+
+	if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+		ImageManagment::getInstance()->resetAll();
+	}
+}
+void scroll(GLFWwindow* window, double xoffset, double yoffset)
+{
+	if (yoffset > 0) {
+		ImageManagment::getInstance()->increaseZoom();
+	}
+	else {
+		ImageManagment::getInstance()->decreaseZoom();
+	}
 }

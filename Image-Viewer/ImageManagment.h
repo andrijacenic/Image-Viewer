@@ -12,23 +12,25 @@ struct Image {
 	fs::path imagePath;
 };
 
-class ImageLoader
+class ImageManagment
 {
 private:
-	ImageLoader();
-	~ImageLoader();
-	static ImageLoader* instance;
+	ImageManagment();
+	~ImageManagment();
+	static ImageManagment* instance;
 	static std::mutex instanceMutex;
 	static std::mutex imagesMutex;
 	static std::vector<std::string> imageExtensions;
 	std::vector<Image> images;
 	int selectedIndex;
 	fs::path currentPath;
+	float zoom = 1.0f;
+	float translationX = 0, translationY = 0;
 public:
-	static ImageLoader* getInstance() {
+	static ImageManagment* getInstance() {
 		instanceMutex.lock();
 		if (instance == nullptr) {
-			instance = new ImageLoader();
+			instance = new ImageManagment();
 		}
 		instanceMutex.unlock();
 		return instance;
@@ -43,10 +45,29 @@ public:
 	int getNumberOfImages() { return images.size(); }
 	int getCurrentImageIndex() { return selectedIndex; }
 	void next() {
-		selectedIndex = (selectedIndex + 1) % images.size();
+		zoom = 1.0f;
+		selectedIndex = selectedIndex < images.size() - 1 ? selectedIndex + 1 : selectedIndex;
 	}
 	void prev() {
-		selectedIndex = (selectedIndex - 1) % images.size();
+		zoom = 1.0f;
+		selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : selectedIndex;
+	}
+	float getZoom() { return zoom; }
+	void resetZoom() { zoom = 1.0f; }
+	void increaseZoom();
+	void decreaseZoom();
+
+	float getTranslationX() { return translationX; }
+	float getTranslationY() { return translationY; }
+
+	void addTranslation(float x, float y) {
+		translationX += x;
+		translationY += y;
+	}
+	void resetTranslation() { translationX = translationY = 0; }
+	void resetAll() {
+		resetZoom();
+		resetTranslation();
 	}
 };
 

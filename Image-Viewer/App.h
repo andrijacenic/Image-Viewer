@@ -4,7 +4,7 @@
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_glfw.h>
-#include "ImageLoader.h"
+#include "ImageManagment.h"
 #include <mutex>
 class App
 {
@@ -32,4 +32,5 @@ private:
 	Image currImage;
 };
 void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods);
+void scroll(GLFWwindow* window, double xoffset, double yoffset);
 

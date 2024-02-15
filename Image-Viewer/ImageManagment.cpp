@@ -1,23 +1,23 @@
-#include "ImageLoader.h"
+#include "ImageManagment.h"
 #include <GLFW/glfw3.h>
 #include "App.h"
-std::mutex ImageLoader::instanceMutex;
-std::mutex ImageLoader::imagesMutex;
-ImageLoader* ImageLoader::instance = nullptr;
-std::vector<std::string> ImageLoader::imageExtensions = {
+std::mutex ImageManagment::instanceMutex;
+std::mutex ImageManagment::imagesMutex;
+ImageManagment* ImageManagment::instance = nullptr;
+std::vector<std::string> ImageManagment::imageExtensions = {
 	".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".webp"
 };
-ImageLoader::ImageLoader() {
+ImageManagment::ImageManagment() {
 	images.reserve(10);
 	selectedIndex = -1;
 }
 
-ImageLoader::~ImageLoader()
+ImageManagment::~ImageManagment()
 {
 	clearImages();
 }
 
-int ImageLoader::loadImages(std::string imagePath)
+int ImageManagment::loadImages(std::string imagePath)
 {
 	clearImages();
 
@@ -52,7 +52,7 @@ int ImageLoader::loadImages(std::string imagePath)
 	return 1;
 }
 
-void ImageLoader::loadImage(Image* image) {
+void ImageManagment::loadImage(Image* image) {
 	if (image->texId != -1)
 		return;
 
@@ -89,7 +89,7 @@ void ImageLoader::loadImage(Image* image) {
 	image->h = height;
 }
 
-void ImageLoader::clearImages() {
+void ImageManagment::clearImages() {
 	imagesMutex.lock();
 	for (Image& i : images) {
 		if(i.texId != -1)
@@ -98,21 +98,30 @@ void ImageLoader::clearImages() {
 	images.clear();
 	imagesMutex.unlock();
 }
-void ImageLoader::deleteInstance()
+void ImageManagment::deleteInstance()
 {
 	instanceMutex.lock();
 	if (instance)
 		delete instance;
 	instanceMutex.unlock();
 }
-Image ImageLoader::getImageAt(int i) {
+Image ImageManagment::getImageAt(int i) {
 	Image img;
 	if (i >= 0 && i < images.size())
 		img = images[i];
 	return img;
 
 }
-Image ImageLoader::getCurrentImage() {
+void ImageManagment::increaseZoom()
+{
+	zoom += (zoom-0.75f) / 10;
+}
+void ImageManagment::decreaseZoom()
+{
+	if(zoom > 0.75f)
+		zoom -= (zoom - 0.75f) / 10;
+}
+Image ImageManagment::getCurrentImage() {
 	if (selectedIndex >= 0)
 		return images[selectedIndex];
 	else
