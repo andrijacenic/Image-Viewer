@@ -37,7 +37,7 @@ void App::runApp()
 		{
 			App::windowMutex.lock();
 			glfwMakeContextCurrent(App::window);
-			// draw your frame here
+
 			glfwPollEvents();
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
@@ -74,7 +74,7 @@ int App::start()
 	if (!glfwInit()) 
 		return -1;
 	glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE);
-	window = glfwCreateWindow(1920, 1080, "Example", nullptr, nullptr);
+	window = glfwCreateWindow(1600, 960, "Example", nullptr, nullptr);
 	if (!window) {
 		glfwTerminate();
 		return -1;
@@ -87,6 +87,8 @@ int App::start()
 	}
 	glfwSetKeyCallback(window, keyPressed);
 	glfwSetScrollCallback(window, scroll);
+	glfwSetMouseButtonCallback(window, mouseClick);
+	glfwSetCursorPosCallback(window, mouseMoving);
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
@@ -106,6 +108,7 @@ void App::update()
 {
 	drawImage();
 	drawImageStrip();
+
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
@@ -122,16 +125,33 @@ void App::update()
 
 		if (ImGui::BeginMenu("Edit"))
 		{
-			if (ImGui::MenuItem("Rotate"))
+			if (ImGui::MenuItem("Rotate Clockwise"))
 			{
+				ImageManagment::getInstance()->rotateCurrentImage(1);
+			}
+			if (ImGui::MenuItem("Rotate Counter Clockwise"))
+			{
+				ImageManagment::getInstance()->rotateCurrentImage(-1);
+			}
+			if (ImGui::MenuItem("Flip X")) {
+				ImageManagment::getInstance()->flipCurrentImageX();
+			}
+			if (ImGui::MenuItem("Flip Y")) {
+				ImageManagment::getInstance()->flipCurrentImageY();
+
 			}
 			ImGui::EndMenu();
+		}
+		if (ImGui::MenuItem("+")) {
+			ImageManagment::getInstance()->increaseZoom();
+		}
+		if (ImGui::MenuItem("-")) {
+			ImageManagment::getInstance()->decreaseZoom();
 		}
 
 		ImGui::EndMainMenuBar();
 	}
 
-	//ImGui::ShowDemoWindow();
 }
 
 void App::drawImage()
@@ -156,7 +176,12 @@ void App::drawImage()
 	int x = ((w - iw) >> 1) + ImageManagment::getInstance()->getTranslationX();
 	int y = ((h - ih) >> 1) + ImageManagment::getInstance()->getTranslationY();
 
-	draw->AddImage((void*)currImage.texId, { (float)x + (1.0f - zoom) * iw,(float)y + (1.0f - zoom) * ih }, {(float)x + iw * zoom - (1.0f - zoom) * iw, (float)y + ih * zoom - (1.0f - zoom) * ih });
+	float x1 = (float)x + (1.0f - zoom) * iw;
+	float y1 = (float)y + (1.0f - zoom) * ih;
+	float x2 = (float)x + iw * zoom - (1.0f - zoom) * iw;
+	float y2 = (float)y + ih * zoom - (1.0f - zoom) * ih;
+	draw->AddImageQuad((void*)currImage.texId, { x1,y1 }, { x2, y1 }, { x2, y2 }, { x1, y2 }, currImage.uv[0], currImage.uv[1], currImage.uv[2], currImage.uv[3]);
+
 }
 
 void App::drawImageStrip()
@@ -183,13 +208,14 @@ void App::drawImageStrip()
 			draw->AddRectFilled({ (float)x + (w + 10) * i, (float)y }, { (float)x + (w+10) * (i + 1)-10 , (float)y + h }, IM_COL32(10, 10, 10, 255));
 		}
 		else {
-			float startY = (float)(y + ((h - ih) >> 1));
-			float startX = (float)x + (w + 10) * i;
+			float y1 = (float)(y + ((h - ih) >> 1));
+			float x1 = (float)x + (w + 10) * i;
 
-			float endY = startY + ih;
-			float endX = startX + iw;
+			float y2 = y1 + ih;
+			float x2 = x1 + iw;
 
-			draw->AddImage((void*)img.texId, { startX, startY}, {endX , endY});
+			draw->AddImageQuad((void*)img.texId, { x1,y1 }, { x2, y1 }, { x2, y2 }, { x1, y2 }, img.uv[0], img.uv[1], img.uv[2], img.uv[3]);
+
 		}
 		if (i == selected) {
 			draw->AddRect({ (float)x + (w+10) * i, (float)y}, {(float)x + (w+10) * (i+1)-10 , (float)y + h}, IM_COL32(200, 200, 200, 255));
@@ -221,6 +247,11 @@ void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods)
 	if (key == GLFW_KEY_R && action == GLFW_PRESS) {
 		ImageManagment::getInstance()->resetAll();
 	}
+
+	if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
+		ImageManagment::getInstance()->rotateCurrentImage(-1);
+	}else if(key == GLFW_KEY_E && action == GLFW_PRESS)
+		ImageManagment::getInstance()->rotateCurrentImage(1);
 }
 void scroll(GLFWwindow* window, double xoffset, double yoffset)
 {
@@ -231,3 +262,20 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset)
 		ImageManagment::getInstance()->decreaseZoom();
 	}
 }
+void mouseClick(GLFWwindow* window, int button, int action, int mods) {
+	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
+		App::leftClickDown = true;
+	}
+	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
+		App::leftClickDown = false;
+	}
+}
+void mouseMoving(GLFWwindow* window, double xpos, double ypos) {
+	if (App::leftClickDown) {
+
+		ImageManagment::getInstance()->addTranslation(xpos - App::mousePosition.x, ypos - App::mousePosition.y);
+	}
+	App::mousePosition = { (float)xpos, (float)ypos };
+}
+bool App::leftClickDown = false;
+ImVec2 App::mousePosition = { 0, 0 };

@@ -121,6 +121,53 @@ void ImageManagment::decreaseZoom()
 	if(zoom > 0.75f)
 		zoom -= (zoom - 0.75f) / 10;
 }
+void ImageManagment::rotateCurrentImage(int dir)
+{
+	dir = dir < 0 ? -1 : 1;
+	images[selectedIndex].rotation += dir;
+	if (dir < 0) {
+		ImVec2 p = images[selectedIndex].uv[0];
+		images[selectedIndex].uv[0] = images[selectedIndex].uv[1];
+		images[selectedIndex].uv[1] = images[selectedIndex].uv[2];
+		images[selectedIndex].uv[2] = images[selectedIndex].uv[3];
+		images[selectedIndex].uv[3] = p;
+	}
+	else
+	{
+		ImVec2 p = images[selectedIndex].uv[3];
+		images[selectedIndex].uv[3] = images[selectedIndex].uv[2];
+		images[selectedIndex].uv[2] = images[selectedIndex].uv[1];
+		images[selectedIndex].uv[1] = images[selectedIndex].uv[0];
+		images[selectedIndex].uv[0] = p;
+	}
+	int w = images[selectedIndex].w;
+	images[selectedIndex].w = images[selectedIndex].h;
+	images[selectedIndex].h = w;
+}
+void ImageManagment::flipCurrentImageX()
+{
+	images[selectedIndex].flipX = !images[selectedIndex].flipX;
+	ImVec2 p = images[selectedIndex].uv[0];
+	images[selectedIndex].uv[0] = images[selectedIndex].uv[1];
+	images[selectedIndex].uv[1] = p;
+
+	p = images[selectedIndex].uv[2];
+	images[selectedIndex].uv[2] = images[selectedIndex].uv[3];
+	images[selectedIndex].uv[3] = p;
+
+
+}
+void ImageManagment::flipCurrentImageY()
+{
+	images[selectedIndex].flipY = !images[selectedIndex].flipY;
+	ImVec2 p = images[selectedIndex].uv[0];
+	images[selectedIndex].uv[0] = images[selectedIndex].uv[3];
+	images[selectedIndex].uv[3] = p;
+
+	p = images[selectedIndex].uv[1];
+	images[selectedIndex].uv[1] = images[selectedIndex].uv[2];
+	images[selectedIndex].uv[2] = p;
+}
 Image ImageManagment::getCurrentImage() {
 	if (selectedIndex >= 0)
 		return images[selectedIndex];

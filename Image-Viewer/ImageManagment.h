@@ -4,12 +4,17 @@
 #include <filesystem>
 #include "stb_image.h"
 #include "glad/glad.h"
+#include <imgui.h>
 namespace fs = std::filesystem;
+
 
 struct Image {
 	unsigned int texId = -1;
 	unsigned int w = 0, h = 0;
 	fs::path imagePath;
+	struct ImVec2 uv[4] = { ImVec2(0,0), ImVec2(1,0) ,ImVec2(1,1),ImVec2(0,1) };
+	int rotation = 0;
+	bool flipX = false, flipY = false;
 };
 
 class ImageManagment
@@ -45,11 +50,11 @@ public:
 	int getNumberOfImages() { return images.size(); }
 	int getCurrentImageIndex() { return selectedIndex; }
 	void next() {
-		zoom = 1.0f;
+		resetAll();
 		selectedIndex = selectedIndex < images.size() - 1 ? selectedIndex + 1 : selectedIndex;
 	}
 	void prev() {
-		zoom = 1.0f;
+		resetAll();
 		selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : selectedIndex;
 	}
 	float getZoom() { return zoom; }
@@ -69,5 +74,9 @@ public:
 		resetZoom();
 		resetTranslation();
 	}
+	
+	void rotateCurrentImage(int dir);
+	void flipCurrentImageX();
+	void flipCurrentImageY();
 };
 

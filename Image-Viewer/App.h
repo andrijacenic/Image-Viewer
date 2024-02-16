@@ -11,6 +11,8 @@ class App
 public:
 	static std::mutex windowMutex;
 	static GLFWwindow* window;
+	static bool leftClickDown;
+	static ImVec2 mousePosition;
 	App(int argc, char** argv) {
 		this->argc = argc;
 		this->argv = argv;
@@ -31,6 +33,8 @@ private:
 	char** argv;
 	Image currImage;
 };
+void mouseClick(GLFWwindow* window, int button, int action, int mods);
 void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods);
 void scroll(GLFWwindow* window, double xoffset, double yoffset);
+void mouseMoving(GLFWwindow* window, double xpos, double ypos);
 
