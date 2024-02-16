@@ -29,6 +29,7 @@ public:
 private:
 	Image currImage;
 	std::string currentFile;
+	std::string iniFileLocation;
 };
 void mouseClick(GLFWwindow* window, int button, int action, int mods);
 void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods);

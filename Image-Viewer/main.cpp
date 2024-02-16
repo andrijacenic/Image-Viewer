@@ -28,7 +28,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	else {
 		path = args[1];
 	}
-	App* app = new App(path.c_str());
+	App* app = new App(path);
 	app->runApp();
 	delete app;
 	return 0;
