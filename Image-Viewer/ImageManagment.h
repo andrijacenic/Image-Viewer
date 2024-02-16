@@ -5,9 +5,9 @@
 #include "stb_image.h"
 #include "glad/glad.h"
 #include <imgui.h>
+
 namespace fs = std::filesystem;
-
-
+#define NUMBER_OF_LOADED_IMAGES 6
 struct Image {
 	unsigned int texId = -1;
 	unsigned int w = 0, h = 0;
@@ -22,15 +22,21 @@ class ImageManagment
 private:
 	ImageManagment();
 	~ImageManagment();
+
 	static ImageManagment* instance;
 	static std::mutex instanceMutex;
 	static std::mutex imagesMutex;
+	static std::mutex reloadImagesMutex;
 	static std::vector<std::string> imageExtensions;
 	std::vector<Image> images;
 	int selectedIndex;
 	fs::path currentPath;
 	float zoom = 1.0f;
 	float translationX = 0, translationY = 0;
+
+	bool shouldReloadImages = false;
+
+	bool shouldRunManagment = true;
 public:
 	static ImageManagment* getInstance() {
 		instanceMutex.lock();
@@ -45,17 +51,34 @@ public:
 	void clearImages();
 	int loadImages(std::string imagePath);
 	void loadImage(Image* image);
+	void unloadImage(Image* image);
 	Image getCurrentImage();
 	Image getImageAt(int i);
 	int getNumberOfImages() { return images.size(); }
 	int getCurrentImageIndex() { return selectedIndex; }
 	void next() {
+		reloadImagesMutex.lock();
+		shouldReloadImages = true;
+		reloadImagesMutex.unlock();
 		resetAll();
 		selectedIndex = selectedIndex < images.size() - 1 ? selectedIndex + 1 : selectedIndex;
 	}
 	void prev() {
+		reloadImagesMutex.lock();
+		shouldReloadImages = true;
+		reloadImagesMutex.unlock();
 		resetAll();
 		selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : selectedIndex;
+	}
+
+	void changeSelectedIndex(int i) {
+		if (i + selectedIndex >= images.size() || i + selectedIndex < 0)
+			return;
+		selectedIndex += i;
+		reloadImagesMutex.lock();
+		shouldReloadImages = true;
+		reloadImagesMutex.unlock();
+		resetAll();
 	}
 	float getZoom() { return zoom; }
 	void resetZoom() { zoom = 1.0f; }
@@ -78,5 +101,12 @@ public:
 	void rotateCurrentImage(int dir);
 	void flipCurrentImageX();
 	void flipCurrentImageY();
+
+	// Only to be run in a seperate thread!
+	void runManagment(std::string imagePath);
+	void stopManagment();
+
+	void loadCloseImages();
+
 };
 

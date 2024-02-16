@@ -3,6 +3,7 @@
 #include "App.h"
 std::mutex ImageManagment::instanceMutex;
 std::mutex ImageManagment::imagesMutex;
+std::mutex ImageManagment::reloadImagesMutex;
 ImageManagment* ImageManagment::instance = nullptr;
 std::vector<std::string> ImageManagment::imageExtensions = {
 	".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".webp"
@@ -14,6 +15,7 @@ ImageManagment::ImageManagment() {
 
 ImageManagment::~ImageManagment()
 {
+	shouldRunManagment = false;
 	clearImages();
 }
 
@@ -47,11 +49,9 @@ int ImageManagment::loadImages(std::string imagePath)
 		images.push_back(i);
 		imagesMutex.unlock();
 	}
+	
+	loadCloseImages();
 
-	loadImage(&images[selectedIndex]);
-	for (Image& i : images) {
-		loadImage(&i);
-	}
 	return 1;
 }
 
@@ -87,22 +87,36 @@ void ImageManagment::loadImage(Image* image) {
 	App::windowMutex.unlock();
 	// Free the image data after loading it into the texture
 	stbi_image_free(image_data);
+
 	image->texId = texture;
 	image->w = width;
 	image->h = height;
+
+}
+
+void ImageManagment::unloadImage(Image* image)
+{
+	if (image->texId == -1)
+		return;
+	App::windowMutex.lock();
+	glfwMakeContextCurrent(App::window);
+	glDeleteTextures(1, &image->texId);
+	image->texId = -1;
+	glfwMakeContextCurrent(nullptr);
+	App::windowMutex.unlock();
 }
 
 void ImageManagment::clearImages() {
 	imagesMutex.lock();
-	for (Image& i : images) {
-		if(i.texId != -1)
-			glDeleteTextures(1, &(i.texId));
+	for (int i = 0; i < images.size(); i++) {
+		unloadImage(&images[i]);
 	}
 	images.clear();
 	imagesMutex.unlock();
 }
 void ImageManagment::deleteInstance()
 {
+	instance->shouldRunManagment = false;
 	instanceMutex.lock();
 	if (instance)
 		delete instance;
@@ -176,4 +190,39 @@ Image ImageManagment::getCurrentImage() {
 		return images[selectedIndex];
 	else
 		return Image();
+}
+void ImageManagment::runManagment(std::string imagePath)
+{
+	loadImages(imagePath);
+	bool sri = false;
+	while (shouldRunManagment) {
+		reloadImagesMutex.lock();
+		sri = shouldReloadImages;
+		reloadImagesMutex.unlock();
+		if(sri)
+			loadCloseImages();
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+}
+
+void ImageManagment::stopManagment()
+{
+	this->shouldRunManagment = false;
+}
+
+void ImageManagment::loadCloseImages()
+{
+	int i = selectedIndex;
+	int j = 0;
+	while (j <= NUMBER_OF_LOADED_IMAGES) {
+		if(i + j < images.size())
+			loadImage(&images[i + j]);
+		if(i - j >= 0)
+			loadImage(&images[i - j]);
+		j++;
+	}
+	for (i = 0; i < images.size(); i++) {
+		if ((i < selectedIndex - NUMBER_OF_LOADED_IMAGES && i >= 0) || (i > selectedIndex + NUMBER_OF_LOADED_IMAGES && i < images.size()))
+			unloadImage(&images[i]);
+	}
 }

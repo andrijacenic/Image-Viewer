@@ -6,16 +6,26 @@
 
 GLFWwindow* App::window = nullptr;
 std::mutex App::windowMutex;
-
+int App::x1 = 0;
+int App::x2 = 0;
 App::~App() {
 	if (window == nullptr)
 		return;
-
+	ImageManagment::getInstance()->stopManagment();
+	for (auto& t : threads) {
+		if (t.joinable())
+			t.join();
+	}
 	ImageManagment::deleteInstance();
+
+	App::windowMutex.lock();
+	glfwMakeContextCurrent(App::window);
 
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
+
+	App::windowMutex.unlock();
 
 
 	glfwDestroyWindow(window);
@@ -33,7 +43,7 @@ void App::runApp()
 		double now = glfwGetTime();
 		double deltaTime = now - lastUpdateTime;
 
-		if ((now - lastFrameTime) >= fpsLimit)
+		if (now - lastFrameTime >= fpsLimit)
 		{
 			App::windowMutex.lock();
 			glfwMakeContextCurrent(App::window);
@@ -59,13 +69,9 @@ void App::runApp()
 			glfwMakeContextCurrent(nullptr);
 			App::windowMutex.unlock();
 
-			// only set lastFrameTime when you actually draw something
 			lastFrameTime = now;
 		}
-
-		// set lastUpdateTime every iteration
 		lastUpdateTime = now;
-
 	}
 }
 
@@ -74,7 +80,7 @@ int App::start()
 	if (!glfwInit()) 
 		return -1;
 	glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE);
-	window = glfwCreateWindow(1600, 960, "Example", nullptr, nullptr);
+	window = glfwCreateWindow(1600, 960, "Image Viewer", nullptr, nullptr);
 	if (!window) {
 		glfwTerminate();
 		return -1;
@@ -98,11 +104,15 @@ int App::start()
 
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 330");
+	std::string cf = currentFile;
+	threads.emplace_back([](std::string file) {
+		ImageManagment::getInstance()->runManagment(file.c_str());
+		}, cf);
 
-	std::thread t([](std::string file) {
-		ImageManagment::getInstance()->loadImages(file.c_str());
-	}, currentFile);
-	t.detach();
+	//std::thread t([](std::string file) {
+	//	ImageManagment::getInstance()->runManagment(file.c_str());
+	//	}, currentFile);
+	//t.detach();
 	App::windowMutex.unlock();
 	return 0;
 }
@@ -180,8 +190,10 @@ void App::drawImage()
 	int y = ((h - ih) >> 1) + ImageManagment::getInstance()->getTranslationY();
 
 	float x1 = (float)x + (1.0f - zoom) * iw;
+	App::x1 = x1;
 	float y1 = (float)y + (1.0f - zoom) * ih;
 	float x2 = (float)x + iw * zoom - (1.0f - zoom) * iw;
+	App::x2 = x2;
 	float y2 = (float)y + ih * zoom - (1.0f - zoom) * ih;
 	draw->AddImageQuad((void*)currImage.texId, { x1,y1 }, { x2, y1 }, { x2, y2 }, { x1, y2 }, currImage.uv[0], currImage.uv[1], currImage.uv[2], currImage.uv[3]);
 
@@ -196,7 +208,7 @@ void App::drawImageStrip()
 	y = h * 5 / 6;
 	h = h * 1 / 6;
 	w = h * 2 / 3;
-	x = vw/2-selected * (w+10) - w/2;
+	x = vw/2-selected * (w+ STRIP_DISTANCE) - w/2;
 
 	draw->AddRectFilled({ (float)0, (float)y }, { (float)vw, (float)y + h }, IM_COL32(10, 10, 10, 140));
 
@@ -208,11 +220,11 @@ void App::drawImageStrip()
 		iw = scale * img.w;
 		ih = scale * img.h;
 		if (img.texId == -1) {
-			draw->AddRectFilled({ (float)x + (w + 10) * i, (float)y }, { (float)x + (w+10) * (i + 1)-10 , (float)y + h }, IM_COL32(10, 10, 10, 255));
+			draw->AddRectFilled({ (float)x + (w + STRIP_DISTANCE) * i, (float)y }, { (float)x + (w+ STRIP_DISTANCE) * (i + 1)- STRIP_DISTANCE , (float)y + h }, IM_COL32(10, 10, 10, 255));
 		}
 		else {
 			float y1 = (float)(y + ((h - ih) >> 1));
-			float x1 = (float)x + (w + 10) * i;
+			float x1 = (float)x + (w + STRIP_DISTANCE) * i;
 
 			float y2 = y1 + ih;
 			float x2 = x1 + iw;
@@ -221,7 +233,7 @@ void App::drawImageStrip()
 
 		}
 		if (i == selected) {
-			draw->AddRect({ (float)x + (w+10) * i, (float)y}, {(float)x + (w+10) * (i+1)-10 , (float)y + h}, IM_COL32(200, 200, 200, 255));
+			draw->AddRect({ (float)x + (w+ STRIP_DISTANCE) * i, (float)y}, {(float)x + (w+ STRIP_DISTANCE) * (i+1)- STRIP_DISTANCE , (float)y + h}, IM_COL32(200, 200, 200, 255));
 		}
 	}
 }
@@ -271,6 +283,22 @@ void mouseClick(GLFWwindow* window, int button, int action, int mods) {
 	}
 	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
 		App::leftClickDown = false;
+
+		int w, h, ih;
+		glfwGetFramebufferSize(window, &w, &h);
+		ih = h * 5 / 6;
+		h = h / 6;
+		w = h * 2 / 3 + 2 * STRIP_DISTANCE;
+		if (App::mousePosition.y >= ih) {
+			int i = ((int)App::mousePosition.x) / w - 5;
+			ImageManagment::getInstance()->changeSelectedIndex(i);
+		}
+		else if(App::mousePosition.x < App::x1){
+			ImageManagment::getInstance()->changeSelectedIndex(-1);
+		}
+		else if (App::mousePosition.x > App::x2) {
+			ImageManagment::getInstance()->changeSelectedIndex(1);
+		}
 	}
 }
 void mouseMoving(GLFWwindow* window, double xpos, double ypos) {
