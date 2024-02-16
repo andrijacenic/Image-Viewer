@@ -39,12 +39,15 @@ int ImageManagment::loadImages(std::string imagePath)
 
 		imagesMutex.lock();
 		Image i = { -1, 0, 0, p }; // TODO: Maybe don't copy the path so much
-		if (p == currentPath)
+
+		if (p == currentPath) {
 			selectedIndex = images.size();
 
+		}
 		images.push_back(i);
 		imagesMutex.unlock();
 	}
+
 	loadImage(&images[selectedIndex]);
 	for (Image& i : images) {
 		loadImage(&i);

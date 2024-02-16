@@ -96,9 +96,9 @@ int App::start()
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 330");
 
-	std::thread t([]() {
-		ImageManagment::getInstance()->loadImages("C:\\Users\\Andrija Cenic\\Desktop\\1.jpg");
-	});
+	std::thread t([](std::string file) {
+		ImageManagment::getInstance()->loadImages(file.c_str());
+	}, currentFile);
 	t.detach();
 	App::windowMutex.unlock();
 	return 0;
@@ -148,7 +148,7 @@ void App::update()
 		if (ImGui::MenuItem("-")) {
 			ImageManagment::getInstance()->decreaseZoom();
 		}
-
+		ImGui::Text(ImageManagment::getInstance()->getCurrentImage().imagePath.string().c_str());
 		ImGui::EndMainMenuBar();
 	}
 

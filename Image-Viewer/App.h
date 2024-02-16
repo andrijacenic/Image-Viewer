@@ -13,12 +13,10 @@ public:
 	static GLFWwindow* window;
 	static bool leftClickDown;
 	static ImVec2 mousePosition;
-	App(int argc, char** argv) {
-		this->argc = argc;
-		this->argv = argv;
-		this->window = nullptr;
+	App(std::string file) {
+		currentFile = file;
+		window = nullptr;
 	}
-
 	~App();
 
 	void runApp();
@@ -29,9 +27,8 @@ public:
 	void drawImageStrip();
 
 private:
-	int argc;
-	char** argv;
 	Image currImage;
+	std::string currentFile;
 };
 void mouseClick(GLFWwindow* window, int button, int action, int mods);
 void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods);
