@@ -6,6 +6,7 @@
 #include <imgui_impl_glfw.h>
 #include "ImageManagment.h"
 #include <mutex>
+#include "FileDialog.h"
 
 #define STRIP_DISTANCE 20
 class App

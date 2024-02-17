@@ -8,6 +8,8 @@ GLFWwindow* App::window = nullptr;
 std::mutex App::windowMutex;
 int App::x1 = 0;
 int App::x2 = 0;
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
+
 App::~App() {
 	if (window == nullptr)
 		return;
@@ -108,11 +110,7 @@ int App::start()
 	threads.emplace_back([](std::string file) {
 		ImageManagment::getInstance()->runManagment(file.c_str());
 		}, cf);
-
-	//std::thread t([](std::string file) {
-	//	ImageManagment::getInstance()->runManagment(file.c_str());
-	//	}, currentFile);
-	//t.detach();
+	//ImageManagment::getInstance()->setImagesPath(cf);
 	App::windowMutex.unlock();
 	return 0;
 }
@@ -128,10 +126,33 @@ void App::update()
 		{
 			if (ImGui::MenuItem("Open"))
 			{
+				if (FileDialog::openFile()){
+					currentFile = FileDialog::sFilePath;
+					ImageManagment::getInstance()->setImagesPath(currentFile);
+				}
 			}
-			if (ImGui::MenuItem("Save"))
+			if (ImGui::BeginMenu("Save"))
 			{
-				ImageManagment::getInstance()->prev();
+				if (ImGui::MenuItem("Save as PNG")) {
+					if (FileDialog::saveFile()) {
+						currentFile = FileDialog::sFilePath;
+						//TODO : Save file
+					}
+				}
+				if (ImGui::MenuItem("Save as BMP")) {
+					if (FileDialog::saveFile()) {
+						currentFile = FileDialog::sFilePath;
+						//TODO : Save file
+					}
+				}
+				if (ImGui::MenuItem("Save as JPG")) {
+					if (FileDialog::saveFile()) {
+						currentFile = FileDialog::sFilePath;
+						//TODO : Save file
+					}
+				}
+
+				ImGui::EndMenu();
 			}
 			ImGui::EndMenu();
 		}
@@ -161,7 +182,14 @@ void App::update()
 		if (ImGui::MenuItem("-")) {
 			ImageManagment::getInstance()->decreaseZoom();
 		}
-		ImGui::Text(ImageManagment::getInstance()->getCurrentImage().imagePath.string().c_str());
+
+		ImGui::Text(currentFile.c_str());
+		std::string text = " width : ";
+		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().w);
+		text += " height : ";
+		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().w);
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(text.c_str()).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
+		ImGui::Text(text.c_str());
 		ImGui::EndMainMenuBar();
 	}
 
@@ -183,7 +211,7 @@ void App::drawImage()
 	}
 	float zoom = ImageManagment::getInstance()->getZoom();
 	int ih = currImage.h, iw = currImage.w;
-	double scale = std::min((double)h / (double)ih, (double)w / (double) iw);
+	double scale = min((double)h / (double)ih, (double)w / (double) iw);
 	iw = scale * currImage.w;
 	ih = scale * currImage.h;
 	int x = ((w - iw) >> 1) + ImageManagment::getInstance()->getTranslationX();
@@ -217,7 +245,7 @@ void App::drawImageStrip()
 	for (int i = 0; i < n; i++) {
 		Image img = ImageManagment::getInstance()->getImageAt(i);
 		int ih = img.h, iw = img.w;
-		double scale = std::min((double)h / (double)ih, (double)w / (double)iw);
+		double scale = min((double)h / (double)ih, (double)w / (double)iw);
 		iw = scale * img.w;
 		ih = scale * img.h;
 		if (img.texId == -1) {

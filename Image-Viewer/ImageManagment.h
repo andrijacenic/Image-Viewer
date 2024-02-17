@@ -28,6 +28,8 @@ private:
 	static std::mutex instanceMutex;
 	static std::mutex imagesMutex;
 	static std::mutex reloadImagesMutex;
+	static std::mutex shouldOpenImageMutex;
+
 	static std::vector<std::string> imageExtensions;
 	std::vector<Image> images;
 	int selectedIndex;
@@ -38,6 +40,8 @@ private:
 	bool shouldReloadImages = false;
 
 	bool shouldRunManagment = true;
+
+	bool shouldOpenImage = true;
 public:
 	static ImageManagment* getInstance() {
 		instanceMutex.lock();
@@ -112,5 +116,6 @@ public:
 
 	void loadCloseImages();
 
+	void setImagesPath(std::string imagePath);
 };
 

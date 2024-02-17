@@ -4,6 +4,8 @@
 std::mutex ImageManagment::instanceMutex;
 std::mutex ImageManagment::imagesMutex;
 std::mutex ImageManagment::reloadImagesMutex;
+std::mutex ImageManagment::shouldOpenImageMutex;
+
 ImageManagment* ImageManagment::instance = nullptr;
 std::vector<std::string> ImageManagment::imageExtensions = {
 	".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".webp"
@@ -22,6 +24,10 @@ ImageManagment::~ImageManagment()
 int ImageManagment::loadImages(std::string imagePath)
 {
 	clearImages();
+	shouldOpenImageMutex.lock();
+	shouldOpenImage = false;
+	shouldOpenImageMutex.unlock();
+	imagesMutex.lock();
 
 	if (!fs::exists(imagePath) || !fs::is_regular_file(imagePath)) {
 		return -1;
@@ -39,7 +45,6 @@ int ImageManagment::loadImages(std::string imagePath)
 			[&extention](const std::string& ext) { return ext == extention; }))
 			continue;
 
-		imagesMutex.lock();
 		Image i = { -1, 0, 0, p }; // TODO: Maybe don't copy the path so much
 
 		if (p == currentPath) {
@@ -47,9 +52,11 @@ int ImageManagment::loadImages(std::string imagePath)
 
 		}
 		images.push_back(i);
-		imagesMutex.unlock();
 	}
-	
+	if (selectedIndex == -1) {
+		selectedIndex = 0;
+	}
+	imagesMutex.unlock();
 	loadCloseImages();
 
 	return 1;
@@ -200,6 +207,11 @@ void ImageManagment::flipImageY(Image* image)
 	image->uv[2] = p;
 }
 Image ImageManagment::getCurrentImage() {
+	if (!imagesMutex.try_lock()) {
+		return Image();
+	}
+	imagesMutex.unlock();
+	std::lock_guard g(imagesMutex);
 	if (selectedIndex >= 0)
 		return images[selectedIndex];
 	else
@@ -207,15 +219,25 @@ Image ImageManagment::getCurrentImage() {
 }
 void ImageManagment::runManagment(std::string imagePath)
 {
-	loadImages(imagePath);
+	setImagesPath(imagePath);
 	bool sri = false;
+	bool sli = false;
 	while (shouldRunManagment) {
+		shouldOpenImageMutex.lock();
+		sli = shouldOpenImage;
+		shouldOpenImageMutex.unlock();
+
+		if (sli)
+			loadImages(currentPath.string());
+
 		reloadImagesMutex.lock();
 		sri = shouldReloadImages;
 		reloadImagesMutex.unlock();
-		if(sri)
+		if (sri) {
 			loadCloseImages();
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		}
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	}
 }
 
@@ -227,27 +249,37 @@ void ImageManagment::stopManagment()
 void ImageManagment::loadCloseImages()
 {
 	int j = 0;
-	while (j <= NUMBER_OF_LOADED_IMAGES) {
-		if(selectedIndex + j < images.size())
-			loadImage(&images[selectedIndex + j]);
-		if(selectedIndex - j >= 0)
-			loadImage(&images[selectedIndex - j]);
-		j++;
-	}
 	int counter;
 	while (true) {
-		counter = 0;
-		if (selectedIndex - j >= 0 && images[selectedIndex - j].texId != -1) {
-			unloadImage(&images[selectedIndex - j]);
-			counter++;
+		if (j <= NUMBER_OF_LOADED_IMAGES) {
+			if (selectedIndex + j < images.size())
+				loadImage(&images[selectedIndex + j]);
+			if (selectedIndex - j >= 0)
+				loadImage(&images[selectedIndex - j]);
 		}
-		if (selectedIndex + j < (int)images.size() && images[selectedIndex + j].texId != -1) {
-			unloadImage(&images[selectedIndex + j]);
-			counter++;
-		}
-		if (counter == 0) {
-			break;
+		else {
+			counter = 0;
+			if (selectedIndex - j >= 0 && images[selectedIndex - j].texId != -1) {
+				unloadImage(&images[selectedIndex - j]);
+				counter++;
+			}
+			if (selectedIndex + j < (int)images.size() && images[selectedIndex + j].texId != -1) {
+				unloadImage(&images[selectedIndex + j]);
+				counter++;
+			}
+			if (counter == 0) {
+				break;
+			}
 		}
 		j++;
 	}
+}
+
+void ImageManagment::setImagesPath(std::string imagePath)
+{
+	shouldOpenImageMutex.lock();
+	currentPath = imagePath;
+	shouldOpenImage = true;
+	selectedIndex = -1;
+	shouldOpenImageMutex.unlock();
 }
