@@ -15,6 +15,7 @@ struct Image {
 	struct ImVec2 uv[4] = { ImVec2(0,0), ImVec2(1,0) ,ImVec2(1,1),ImVec2(0,1) };
 	int rotation = 0;
 	bool flipX = false, flipY = false;
+	ImVec2 getImageUv(int i);
 };
 
 class ImageManagment
@@ -99,8 +100,11 @@ public:
 	}
 	
 	void rotateCurrentImage(int dir);
-	void flipCurrentImageX();
-	void flipCurrentImageY();
+	void flipImageX(Image* image);
+	void flipImageY(Image * image);
+
+	void flipCurrentImageX() { flipImageX(&images[selectedIndex]); };
+	void flipCurrentImageY() { flipImageY(&images[selectedIndex]); };
 
 	// Only to be run in a seperate thread!
 	void runManagment(std::string imagePath);

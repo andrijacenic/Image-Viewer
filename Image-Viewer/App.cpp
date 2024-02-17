@@ -190,12 +190,13 @@ void App::drawImage()
 	int y = ((h - ih) >> 1) + ImageManagment::getInstance()->getTranslationY();
 
 	float x1 = (float)x + (1.0f - zoom) * iw;
-	App::x1 = x1;
 	float y1 = (float)y + (1.0f - zoom) * ih;
 	float x2 = (float)x + iw * zoom - (1.0f - zoom) * iw;
-	App::x2 = x2;
 	float y2 = (float)y + ih * zoom - (1.0f - zoom) * ih;
 	draw->AddImageQuad((void*)currImage.texId, { x1,y1 }, { x2, y1 }, { x2, y2 }, { x1, y2 }, currImage.uv[0], currImage.uv[1], currImage.uv[2], currImage.uv[3]);
+	
+	//App::x2 = x2;
+	//App::x1 = x1;
 
 }
 
@@ -278,10 +279,12 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset)
 	}
 }
 void mouseClick(GLFWwindow* window, int button, int action, int mods) {
+	if (ImGui::GetIO().WantCaptureMouse)
+		return;
 	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
 		App::leftClickDown = true;
 	}
-	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
+	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
 		App::leftClickDown = false;
 
 		int w, h, ih;
@@ -293,12 +296,13 @@ void mouseClick(GLFWwindow* window, int button, int action, int mods) {
 			int i = ((int)App::mousePosition.x) / w - 5;
 			ImageManagment::getInstance()->changeSelectedIndex(i);
 		}
-		else if(App::mousePosition.x < App::x1){
-			ImageManagment::getInstance()->changeSelectedIndex(-1);
-		}
-		else if (App::mousePosition.x > App::x2) {
-			ImageManagment::getInstance()->changeSelectedIndex(1);
-		}
+		// TODO : Maybe revisit the idea, but add buttons left and right instead of this.
+		//else if(App::mousePosition.x < App::x1){
+		//	ImageManagment::getInstance()->changeSelectedIndex(-1);
+		//}
+		//else if (App::mousePosition.x > App::x2) {
+		//	ImageManagment::getInstance()->changeSelectedIndex(1);
+		//}
 	}
 }
 void mouseMoving(GLFWwindow* window, double xpos, double ypos) {

@@ -102,6 +102,16 @@ void ImageManagment::unloadImage(Image* image)
 	glfwMakeContextCurrent(App::window);
 	glDeleteTextures(1, &image->texId);
 	image->texId = -1;
+	image->w = image->h = 0;
+	if (image->flipX)
+		flipImageX(image);
+	if (image->flipY)
+		flipImageY(image);
+	image->uv[0] = { 0, 0 };
+	image->uv[1] = { 1, 0 };
+	image->uv[2] = { 1, 1 };
+	image->uv[3] = { 0, 1 };
+	image->rotation = 0;
 	glfwMakeContextCurrent(nullptr);
 	App::windowMutex.unlock();
 }
@@ -140,8 +150,9 @@ void ImageManagment::decreaseZoom()
 }
 void ImageManagment::rotateCurrentImage(int dir)
 {
+
 	dir = dir < 0 ? -1 : 1;
-	images[selectedIndex].rotation += dir;
+	images[selectedIndex].rotation = (images[selectedIndex].rotation + dir) % 4;
 	if (dir < 0) {
 		ImVec2 p = images[selectedIndex].uv[0];
 		images[selectedIndex].uv[0] = images[selectedIndex].uv[1];
@@ -161,29 +172,32 @@ void ImageManagment::rotateCurrentImage(int dir)
 	images[selectedIndex].w = images[selectedIndex].h;
 	images[selectedIndex].h = w;
 }
-void ImageManagment::flipCurrentImageX()
+void ImageManagment::flipImageX(Image *image)
 {
-	images[selectedIndex].flipX = !images[selectedIndex].flipX;
-	ImVec2 p = images[selectedIndex].uv[0];
-	images[selectedIndex].uv[0] = images[selectedIndex].uv[1];
-	images[selectedIndex].uv[1] = p;
+	if (image == nullptr)
+		return;
+	image->flipX = !image->flipX;
 
-	p = images[selectedIndex].uv[2];
-	images[selectedIndex].uv[2] = images[selectedIndex].uv[3];
-	images[selectedIndex].uv[3] = p;
+	ImVec2 p = image->uv[0];
+	image->uv[0] = image->uv[1];
+	image->uv[1] = p;
 
-
+	p = image->uv[2];
+	image->uv[2] = image->uv[3];
+	image->uv[3] = p;
 }
-void ImageManagment::flipCurrentImageY()
+void ImageManagment::flipImageY(Image* image)
 {
-	images[selectedIndex].flipY = !images[selectedIndex].flipY;
-	ImVec2 p = images[selectedIndex].uv[0];
-	images[selectedIndex].uv[0] = images[selectedIndex].uv[3];
-	images[selectedIndex].uv[3] = p;
+	if (image == nullptr)
+		return;
+	image->flipY = !image->flipY;
+	ImVec2 p = image->uv[0];
+	image->uv[0] = image->uv[3];
+	image->uv[3] = p;
 
-	p = images[selectedIndex].uv[1];
-	images[selectedIndex].uv[1] = images[selectedIndex].uv[2];
-	images[selectedIndex].uv[2] = p;
+	p = image->uv[1];
+	image->uv[1] = image->uv[2];
+	image->uv[2] = p;
 }
 Image ImageManagment::getCurrentImage() {
 	if (selectedIndex >= 0)
@@ -212,17 +226,28 @@ void ImageManagment::stopManagment()
 
 void ImageManagment::loadCloseImages()
 {
-	int i = selectedIndex;
 	int j = 0;
 	while (j <= NUMBER_OF_LOADED_IMAGES) {
-		if(i + j < images.size())
-			loadImage(&images[i + j]);
-		if(i - j >= 0)
-			loadImage(&images[i - j]);
+		if(selectedIndex + j < images.size())
+			loadImage(&images[selectedIndex + j]);
+		if(selectedIndex - j >= 0)
+			loadImage(&images[selectedIndex - j]);
 		j++;
 	}
-	for (i = 0; i < images.size(); i++) {
-		if ((i < selectedIndex - NUMBER_OF_LOADED_IMAGES && i >= 0) || (i > selectedIndex + NUMBER_OF_LOADED_IMAGES && i < images.size()))
-			unloadImage(&images[i]);
+	int counter;
+	while (true) {
+		counter = 0;
+		if (selectedIndex - j >= 0 && images[selectedIndex - j].texId != -1) {
+			unloadImage(&images[selectedIndex - j]);
+			counter++;
+		}
+		if (selectedIndex + j < (int)images.size() && images[selectedIndex + j].texId != -1) {
+			unloadImage(&images[selectedIndex + j]);
+			counter++;
+		}
+		if (counter == 0) {
+			break;
+		}
+		j++;
 	}
 }
