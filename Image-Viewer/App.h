@@ -17,9 +17,11 @@ public:
 	static bool leftClickDown;
 	static ImVec2 mousePosition;
 	static int x1, x2;
+	static int hoverSel;
 	int quality = 80;
 
-	App(std::string file) {
+	App(std::string file, std::string icon) {
+		iconPath = icon;
 		currentFile = file;
 		window = nullptr;
 	}
@@ -35,6 +37,7 @@ public:
 private:
 	Image currImage;
 	std::string currentFile;
+	std::string iconPath;
 	std::string iniFileLocation;
 	std::vector<std::thread> threads;
 

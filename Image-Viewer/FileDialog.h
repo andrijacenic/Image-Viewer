@@ -8,5 +8,5 @@ public:
     static std::string sSelectedFile;
     static std::string sFilePath;
     static bool openFile();
-    static bool saveFile();
+    static bool saveFile(const wchar_t* ext);
 };

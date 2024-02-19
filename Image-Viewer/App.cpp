@@ -4,10 +4,13 @@
 #include <string>
 #include <thread>
 #include <windows.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include "GLFW/glfw3native.h"
 GLFWwindow* App::window = nullptr;
 std::mutex App::windowMutex;
 int App::x1 = 0;
 int App::x2 = 0;
+int App::hoverSel = 0;
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 
 App::~App() {
@@ -89,6 +92,11 @@ int App::start()
 	}
 	App::windowMutex.lock();
 	glfwMakeContextCurrent(window);
+	GLFWimage image[1];
+	int chanels = 3;
+	image[0].pixels = stbi_load(iconPath.c_str(), &image->width, &image->height, &chanels, 4);
+	glfwSetWindowIcon(window, 1, image);
+	stbi_image_free(image[0].pixels);
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		App::windowMutex.unlock();
 		return -1;
@@ -134,22 +142,31 @@ void App::update()
 			if (ImGui::BeginMenu("Save"))
 			{
 				if (ImGui::MenuItem("Save as PNG")) {
-					if (FileDialog::saveFile()) {
+					if (FileDialog::saveFile(L".png")) {
 						currentFile = FileDialog::sFilePath;
+						if (!currentFile.ends_with(".png")) {
+							currentFile += ".png";
+						}
 						saveImage(ImageManagment::getInstance()->getCurrentImage(), currentFile, PNG);
 					}
 				}
 				if (ImGui::MenuItem("Save as BMP")) {
-					if (FileDialog::saveFile()) {
+					if (FileDialog::saveFile(L".bmp")) {
 						currentFile = FileDialog::sFilePath;
+						if (!currentFile.ends_with(".bmp")) {
+							currentFile += ".bmp";
+						}
 						saveImage(ImageManagment::getInstance()->getCurrentImage(), currentFile, BMP);
 					}
 				}
 				if (ImGui::BeginMenu("Save as JPG")) {
 					ImGui::SliderInt("Quality", &quality, 1, 100);
 					if (ImGui::Button("Save")) {
-						if (FileDialog::saveFile()) {
+						if (FileDialog::saveFile(L".jpg")) {
 							currentFile = FileDialog::sFilePath;
+							if (!currentFile.ends_with(".jpg")) {
+								currentFile += ".jpg";
+							}
 							saveImage(ImageManagment::getInstance()->getCurrentImage(), currentFile, JPG, quality);
 						}
 					}
@@ -192,8 +209,6 @@ void App::update()
 		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().w);
 		text += " height : ";
 		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().w);
-		text += " rotation : ";
-		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().rotation);
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(text.c_str()).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
 		ImGui::Text(text.c_str());
 		ImGui::EndMainMenuBar();
@@ -271,6 +286,9 @@ void App::drawImageStrip()
 		if (i == selected) {
 			draw->AddRect({ (float)x + (w+ STRIP_DISTANCE) * i, (float)y}, {(float)x + (w+ STRIP_DISTANCE) * (i+1)- STRIP_DISTANCE , (float)y + h}, IM_COL32(200, 200, 200, 255));
 		}
+		if (i == selected + hoverSel) {
+			draw->AddRect({ (float)x + (w + STRIP_DISTANCE) * i, (float)y }, { (float)x + (w + STRIP_DISTANCE) * (i + 1) - STRIP_DISTANCE , (float)y + h }, IM_COL32(150, 120, 150, 255));
+		}
 	}
 }
 void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -323,13 +341,14 @@ void mouseClick(GLFWwindow* window, int button, int action, int mods) {
 		App::leftClickDown = false;
 
 		int w, h, ih;
+		int iw;
 		glfwGetFramebufferSize(window, &w, &h);
 		ih = h * 5 / 6;
 		h = h / 6;
-		w = h * 2 / 3 + 2 * STRIP_DISTANCE;
+		iw = h * 2 / 3 + STRIP_DISTANCE;
 		if (App::mousePosition.y >= ih) {
-			int i = ((int)App::mousePosition.x) / w - 5;
-			ImageManagment::getInstance()->changeSelectedIndex(i);
+			float f = (App::mousePosition.x - (w - iw) / 2) / iw;
+			ImageManagment::getInstance()->changeSelectedIndex(f < 0 ? (int)f - 1 : (int)f);
 		}
 		// TODO : Maybe revisit the idea, but add buttons left and right instead of this.
 		//else if(App::mousePosition.x < App::x1){
@@ -341,6 +360,19 @@ void mouseClick(GLFWwindow* window, int button, int action, int mods) {
 	}
 }
 void mouseMoving(GLFWwindow* window, double xpos, double ypos) {
+	int w, h, ih;
+	int iw;
+	glfwGetFramebufferSize(window, &w, &h);
+	ih = h * 5 / 6;
+	h = h / 6;
+	iw = h * 2 / 3 + STRIP_DISTANCE;
+	if (App::mousePosition.y >= ih) {
+		float f = (App::mousePosition.x - (w - iw) / 2) / iw;
+		App::hoverSel = f < 0 ? (int)f - 1 : (int)f;
+	}
+	else {
+		App::hoverSel = 0;
+	}
 	if (App::leftClickDown) {
 
 		ImageManagment::getInstance()->addTranslation(xpos - App::mousePosition.x, ypos - App::mousePosition.y);

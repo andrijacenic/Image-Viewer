@@ -52,7 +52,7 @@ bool FileDialog::openFile(){
     return TRUE;
 }
 
-bool FileDialog::saveFile()
+bool FileDialog::saveFile(const wchar_t* ext)
 {
     HRESULT f_SysHr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     if (FAILED(f_SysHr))
@@ -64,6 +64,12 @@ bool FileDialog::saveFile()
         CoUninitialize();
         return FALSE;
     }
+    COMDLG_FILTERSPEC filterSpec = { L"Image", ext };
+    filterSpec.pszName = L"Image"; // User-friendly name
+    filterSpec.pszSpec = ext; // Allowed extension
+
+    // Set the filter
+    f_FileSystem->SetFileTypes(1, &filterSpec);
 
     f_SysHr = f_FileSystem->Show(NULL);
     if (FAILED(f_SysHr)) {

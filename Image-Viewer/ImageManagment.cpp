@@ -23,15 +23,17 @@ ImageManagment::~ImageManagment()
 
 int ImageManagment::loadImages(std::string imagePath)
 {
+	if (imagePath.empty())
+		return 0;
 	clearImages();
 	shouldOpenImageMutex.lock();
 	shouldOpenImage = false;
 	shouldOpenImageMutex.unlock();
-	imagesMutex.lock();
 
 	if (!fs::exists(imagePath) || !fs::is_regular_file(imagePath)) {
 		return -1;
 	}
+	imagesMutex.lock();
 	currentPath = fs::path(imagePath);
 	fs::path parrentPath = currentPath.parent_path();
 	for (fs::path p : fs::directory_iterator(parrentPath)) {
