@@ -17,6 +17,8 @@ public:
 	static bool leftClickDown;
 	static ImVec2 mousePosition;
 	static int x1, x2;
+	int quality = 80;
+
 	App(std::string file) {
 		currentFile = file;
 		window = nullptr;

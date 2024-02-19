@@ -3,12 +3,12 @@
 #include <algorithm>
 #include <string>
 #include <thread>
-
+#include <windows.h>
 GLFWwindow* App::window = nullptr;
 std::mutex App::windowMutex;
 int App::x1 = 0;
 int App::x2 = 0;
-#define min(a,b)            (((a) < (b)) ? (a) : (b))
+#define min(a,b) (((a) < (b)) ? (a) : (b))
 
 App::~App() {
 	if (window == nullptr)
@@ -136,20 +136,24 @@ void App::update()
 				if (ImGui::MenuItem("Save as PNG")) {
 					if (FileDialog::saveFile()) {
 						currentFile = FileDialog::sFilePath;
-						//TODO : Save file
+						saveImage(ImageManagment::getInstance()->getCurrentImage(), currentFile, PNG);
 					}
 				}
 				if (ImGui::MenuItem("Save as BMP")) {
 					if (FileDialog::saveFile()) {
 						currentFile = FileDialog::sFilePath;
-						//TODO : Save file
+						saveImage(ImageManagment::getInstance()->getCurrentImage(), currentFile, BMP);
 					}
 				}
-				if (ImGui::MenuItem("Save as JPG")) {
-					if (FileDialog::saveFile()) {
-						currentFile = FileDialog::sFilePath;
-						//TODO : Save file
+				if (ImGui::BeginMenu("Save as JPG")) {
+					ImGui::SliderInt("Quality", &quality, 1, 100);
+					if (ImGui::Button("Save")) {
+						if (FileDialog::saveFile()) {
+							currentFile = FileDialog::sFilePath;
+							saveImage(ImageManagment::getInstance()->getCurrentImage(), currentFile, JPG, quality);
+						}
 					}
+					ImGui::EndMenu();
 				}
 
 				ImGui::EndMenu();
@@ -183,14 +187,17 @@ void App::update()
 			ImageManagment::getInstance()->decreaseZoom();
 		}
 
-		ImGui::Text(currentFile.c_str());
+		ImGui::Text(ImageManagment::getInstance()->getCurrentImage().imagePath.c_str());
 		std::string text = " width : ";
 		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().w);
 		text += " height : ";
 		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().w);
+		text += " rotation : ";
+		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().rotation);
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(text.c_str()).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
 		ImGui::Text(text.c_str());
 		ImGui::EndMainMenuBar();
+
 	}
 
 }
@@ -312,7 +319,7 @@ void mouseClick(GLFWwindow* window, int button, int action, int mods) {
 	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
 		App::leftClickDown = true;
 	}
-	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
+	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
 		App::leftClickDown = false;
 
 		int w, h, ih;

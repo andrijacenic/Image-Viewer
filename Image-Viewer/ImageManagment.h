@@ -3,19 +3,19 @@
 #include <vector>
 #include <filesystem>
 #include "stb_image.h"
+#include "stb_image_write.h"
 #include "glad/glad.h"
 #include <imgui.h>
-
+#include <functional>
 namespace fs = std::filesystem;
 #define NUMBER_OF_LOADED_IMAGES 6
 struct Image {
 	unsigned int texId = -1;
 	unsigned int w = 0, h = 0;
-	fs::path imagePath;
+	std::string imagePath;
 	struct ImVec2 uv[4] = { ImVec2(0,0), ImVec2(1,0) ,ImVec2(1,1),ImVec2(0,1) };
 	int rotation = 0;
 	bool flipX = false, flipY = false;
-	ImVec2 getImageUv(int i);
 };
 
 class ImageManagment
@@ -118,4 +118,12 @@ public:
 
 	void setImagesPath(std::string imagePath);
 };
+enum SaveType {
+	PNG = 0, JPG, BMP
+};
+// Can be called in a thread
+void saveImage(Image image, std::string newFilePath = std::string(), int type = PNG, int quality = 80);
 
+void flipDataX(int width, int height, char* data); 
+void flipDataY(int width, int height, char* data);
+void rotateData90(int width, int height, char* data);

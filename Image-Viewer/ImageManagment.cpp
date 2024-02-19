@@ -45,7 +45,7 @@ int ImageManagment::loadImages(std::string imagePath)
 			[&extention](const std::string& ext) { return ext == extention; }))
 			continue;
 
-		Image i = { -1, 0, 0, p }; // TODO: Maybe don't copy the path so much
+		Image i = { -1, 0, 0, p.string()}; // TODO: Maybe don't copy the path so much
 
 		if (p == currentPath) {
 			selectedIndex = images.size();
@@ -67,7 +67,7 @@ void ImageManagment::loadImage(Image* image) {
 		return;
 
 	int width, height, num_channels;
-	stbi_uc* image_data = stbi_load(image->imagePath.string().c_str(), &width, &height, &num_channels, 0);
+	stbi_uc* image_data = stbi_load(image->imagePath.c_str(), &width, &height, &num_channels, 0);
 
 	if (!image_data) {
 		return;
@@ -282,4 +282,100 @@ void ImageManagment::setImagesPath(std::string imagePath)
 	shouldOpenImage = true;
 	selectedIndex = -1;
 	shouldOpenImageMutex.unlock();
+}
+
+void saveImage(Image image, std::string newFilePath, int type, int quality)
+{
+	if (newFilePath.empty())
+		newFilePath = image.imagePath;
+	int width, height, num_channels;
+	char* data = (char*)stbi_load(image.imagePath.c_str(), &width, &height, &num_channels, 0);
+	if (image.flipX) {
+		flipDataX(width, height, data);
+	}
+	if (image.flipY) {
+		flipDataY(width, height, data);
+	}
+	int p = 0;
+	image.rotation = (image.rotation + 4) % 4;
+	switch (image.rotation)
+	{
+	case 1:
+		rotateData90(width, height, data);
+		p = width;
+		width = height;
+		height = p;
+		break;
+	case 2:
+		flipDataX(width, height, data);
+		flipDataY(width, height, data);
+		break;
+	case 3:
+		rotateData90(width, height, data);
+		p = width;
+		width = height;
+		height = p;
+		flipDataY(width, height, data);
+		break;
+	default:
+		break;
+	}
+	switch (type)
+	{
+	case PNG:
+		stbi_write_png(newFilePath.c_str(), width, height, 3, data, width*3);
+		break;
+	case JPG:
+		stbi_write_jpg(newFilePath.c_str(), width, height, 3, data, quality);
+		break;
+	case BMP:
+		stbi_write_bmp(newFilePath.c_str(), width, height, 3, data);
+		break;
+	default:
+		break;
+	}
+
+	stbi_image_free(data);
+}
+
+void flipDataX(int width, int height, char* data)
+{
+	for (int y = 0; y < height; ++y) {
+		for (int i = 0; i < width / 2; ++i) {
+			std::swap(data[y * width * 3 + i * 3], data[y * width * 3 + (width - i - 1) * 3]);
+			std::swap(data[y * width * 3 + i * 3 + 1], data[y * width * 3 + (width - i - 1) * 3 + 1]);
+			std::swap(data[y * width * 3 + i * 3 + 2], data[y * width * 3 + (width - i - 1) * 3 + 2]);
+		}
+	}
+}
+
+void flipDataY(int width, int height, char* data)
+{
+	for (int y = 0; y < height / 2; ++y) {
+		for (int x = 0; x < width; ++x) {
+			std::swap(data[(y * width + x) * 3], data[((height - y - 1) * width + x) * 3]);
+			std::swap(data[(y * width + x) * 3 + 1], data[((height - y - 1) * width + x) * 3 + 1]);
+			std::swap(data[(y * width + x) * 3 + 2], data[((height - y - 1) * width + x) * 3 + 2]);
+		}
+	}
+}
+
+void rotateData90(int width, int height, char* data)
+{
+	char* tmp = new char[width * height * 3];
+	for (int y = 0; y < height; ++y) {
+		for (int x = 0; x < width; ++x) {
+			tmp[(x * height + (height - y - 1)) * 3] = data[y * width * 3 + x * 3];
+			tmp[(x * height + (height - y - 1)) * 3 + 1] = data[y * width * 3 + x * 3 + 1];
+			tmp[(x * height + (height - y - 1)) * 3 + 2] = data[y * width * 3 + x * 3 + 2];
+		}
+	}
+	for (int y = 0; y < height; ++y) {
+		for (int x = 0; x < width; ++x) {
+			data[(y * width + x) * 3] = tmp[(y * width + x) * 3];
+			data[(y * width + x) * 3 + 1] = tmp[(y * width + x) * 3 + 1];
+			data[(y * width + x) * 3 + 2] = tmp[(y * width + x) * 3 + 2];
+		}
+	}
+	delete[] tmp;
 }
