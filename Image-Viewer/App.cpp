@@ -92,11 +92,15 @@ int App::start()
 	}
 	App::windowMutex.lock();
 	glfwMakeContextCurrent(window);
-	GLFWimage image[1];
-	int chanels = 3;
-	image[0].pixels = stbi_load(iconPath.c_str(), &image->width, &image->height, &chanels, 4);
-	glfwSetWindowIcon(window, 1, image);
-	stbi_image_free(image[0].pixels);
+	if (!iconPath.empty()) {
+		GLFWimage image[1];
+		int chanels = 3;
+		image[0].pixels = stbi_load(iconPath.c_str(), &image->width, &image->height, &chanels, 4);
+		if (image[0].pixels != NULL) {
+			glfwSetWindowIcon(window, 1, image);
+			stbi_image_free(image[0].pixels);
+		}
+	}
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		App::windowMutex.unlock();
 		return -1;
@@ -216,7 +220,6 @@ void App::update()
 	}
 
 }
-
 void App::drawImage()
 {
 	ImDrawList* draw = ImGui::GetBackgroundDrawList();
