@@ -34,7 +34,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	else {
 		path = std::string();
 	}
-	App* app = new App(path, "");
+	App* app = new App(path, "icon.png");
 	app->runApp();
 	delete app;
 	return 0;
