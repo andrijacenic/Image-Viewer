@@ -36,6 +36,7 @@ private:
 	fs::path currentPath;
 	float zoom = 1.0f;
 	float translationX = 0, translationY = 0;
+	float angle = 0.0f;
 
 	bool shouldReloadImages = false;
 
@@ -86,10 +87,12 @@ public:
 		resetAll();
 	}
 	float getZoom() { return zoom; }
+	float getAngle() { return angle; }
+	void resetAngle() { angle = 0.0f; }
 	void resetZoom() { zoom = 1.0f; }
 	void increaseZoom();
 	void decreaseZoom();
-
+	void changeAngle(float a) { angle += a; }
 	float getTranslationX() { return translationX; }
 	float getTranslationY() { return translationY; }
 
@@ -100,6 +103,7 @@ public:
 	void resetTranslation() { translationX = translationY = 0; }
 	void resetAll() {
 		resetZoom();
+		resetAngle();
 		resetTranslation();
 	}
 	

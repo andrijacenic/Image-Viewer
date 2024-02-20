@@ -15,8 +15,10 @@ public:
 	static std::mutex windowMutex;
 	static GLFWwindow* window;
 	static bool leftClickDown;
+	static bool rightClickDown;
+	static bool ctrlDown;
+	static bool holdingWindow;
 	static ImVec2 mousePosition;
-	static int x1, x2;
 	static int hoverSel;
 	int quality = 80;
 
@@ -34,13 +36,16 @@ public:
 	void drawImage();
 	void drawImageStrip();
 
+	void toggleFullScreen();
+
 private:
 	Image currImage;
 	std::string currentFile;
 	std::string iconPath;
 	std::string iniFileLocation;
 	std::vector<std::thread> threads;
-
+	int windowWidth = 0, windowHeight = 0, posX = 0, posY = 0;
+	bool isFullScreen = false;
 };
 void mouseClick(GLFWwindow* window, int button, int action, int mods);
 void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods);

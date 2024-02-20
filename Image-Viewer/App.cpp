@@ -1,4 +1,4 @@
-#include "App.h"
+﻿#include "App.h"
 #include "stb_image.h"
 #include <algorithm>
 #include <string>
@@ -8,8 +8,6 @@
 #include "GLFW/glfw3native.h"
 GLFWwindow* App::window = nullptr;
 std::mutex App::windowMutex;
-int App::x1 = 0;
-int App::x2 = 0;
 int App::hoverSel = 0;
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 
@@ -131,7 +129,6 @@ void App::update()
 {
 	drawImage();
 	drawImageStrip();
-
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
@@ -179,6 +176,10 @@ void App::update()
 
 				ImGui::EndMenu();
 			}
+			ImGui::Separator();
+			if (ImGui::MenuItem("Exit")) {
+				glfwSetWindowShouldClose(window, true);
+			}
 			ImGui::EndMenu();
 		}
 
@@ -199,6 +200,13 @@ void App::update()
 				ImageManagment::getInstance()->flipCurrentImageY();
 
 			}
+			ImGui::Separator();
+			if (ImGui::MenuItem("Rotate Clockwise by 15deg")) {
+				ImageManagment::getInstance()->changeAngle(15 * 3.14 / 180);
+			}
+			if (ImGui::MenuItem("Rotate Counter Clockwise by 15deg")) {
+				ImageManagment::getInstance()->changeAngle(-15 * 3.14 / 180);
+			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::MenuItem("+")) {
@@ -208,17 +216,56 @@ void App::update()
 			ImageManagment::getInstance()->decreaseZoom();
 		}
 
+		if (ImGui::MenuItem(isFullScreen ? "> <" : "[ ]")) {
+			toggleFullScreen();
+		}
+
 		ImGui::Text(ImageManagment::getInstance()->getCurrentImage().imagePath.c_str());
 		std::string text = " width : ";
 		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().w);
 		text += " height : ";
-		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().w);
+		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().h);
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(text.c_str()).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
 		ImGui::Text(text.c_str());
-		ImGui::EndMainMenuBar();
 
+		//ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.8f, 0.0f, 1.0f));
+		//ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.55f, 0.8f, 0.55f, 1.0f));
+		//ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.8f, 0.4f, 1.0f));
+		//if (ImGui::Button("_")) {
+		//	ShowWindow(glfwGetWin32Window(window), SW_MINIMIZE);
+		//}
+		//ImGui::PopStyleColor(3);
+
+		//ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.8f, 1.0f));
+		//ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.55f, 0.55f, 0.8f, 1.0f));
+		//ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.55f, 0.4f, 0.8f, 1.0f));
+		//if (ImGui::Button("[]")) {
+		//	toggleFullScreen();
+		//}
+		//ImGui::PopStyleColor(3);
+		//ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.0f, 0.0f, 1.0f));
+		//ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.55f, 0.55f, 1.0f));
+		//ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
+		//if (ImGui::Button("X")) {
+		//	glfwSetWindowShouldClose(window, true);
+		//}
+		//ImGui::PopStyleColor(3);
+		ImGui::EndMainMenuBar();
 	}
 
+}
+void App::toggleFullScreen() {
+	if (isFullScreen) {
+		glfwSetWindowMonitor(window, nullptr, posX, posY, windowWidth, windowHeight, 0);
+	}
+	else {
+		glfwGetWindowSize(window, &windowWidth, &windowHeight);
+		glfwGetWindowPos(window, &posX, &posY);
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+		glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+	}
+	isFullScreen = !isFullScreen;
 }
 void App::drawImage()
 {
@@ -242,15 +289,22 @@ void App::drawImage()
 	int x = ((w - iw) >> 1) + ImageManagment::getInstance()->getTranslationX();
 	int y = ((h - ih) >> 1) + ImageManagment::getInstance()->getTranslationY();
 
+	//New x : x2 = (x1 - px) * cos(θ_rad) - (y1 - py) * sin(θ_rad) + px
+	//New y : y2 = (x1 - px) * sin(θ_rad) + (y1 - py) * cos(θ_rad) + py
+
 	float x1 = (float)x + (1.0f - zoom) * iw;
 	float y1 = (float)y + (1.0f - zoom) * ih;
 	float x2 = (float)x + iw * zoom - (1.0f - zoom) * iw;
 	float y2 = (float)y + ih * zoom - (1.0f - zoom) * ih;
-	draw->AddImageQuad((void*)currImage.texId, { x1,y1 }, { x2, y1 }, { x2, y2 }, { x1, y2 }, currImage.uv[0], currImage.uv[1], currImage.uv[2], currImage.uv[3]);
+	float px = x1 + (iw * zoom - (1.0f - zoom) * iw) / 2;
+	float py = y1 + (ih * zoom - (1.0f - zoom) * ih) / 2;
+	float angle = ImageManagment::getInstance()->getAngle();
+	ImVec2 p1 = { (float)((x1 - px) * cos(angle) - (y1 - py) * sin(angle) + px), (float)((x1 - px) * sin(angle) + (y1 - py) * cos(angle) + py )};
+	ImVec2 p2 = { (float)((x2 - px) * cos(angle) - (y1 - py) * sin(angle) + px), (float)((x2 - px) * sin(angle) + (y1 - py) * cos(angle) + py) };
+	ImVec2 p3 = { (float) ((x2 - px) * cos(angle) - (y2 - py) * sin(angle) + px), (float)((x2 - px) * sin(angle) + (y2 - py) * cos(angle) + py) };
+	ImVec2 p4 = { (float)((x1 - px) * cos(angle) - (y2 - py) * sin(angle) + px), (float) ((x1 - px) * sin(angle) + (y2 - py) * cos(angle) + py) };
+	draw->AddImageQuad((void*)currImage.texId, p1, p2, p3, p4, currImage.uv[0], currImage.uv[1], currImage.uv[2], currImage.uv[3]);
 	
-	//App::x2 = x2;
-	//App::x1 = x1;
-
 }
 
 void App::drawImageStrip()
@@ -264,7 +318,7 @@ void App::drawImageStrip()
 	w = h * 2 / 3;
 	x = vw/2-selected * (w+ STRIP_DISTANCE) - w/2;
 
-	draw->AddRectFilled({ (float)0, (float)y }, { (float)vw, (float)y + h }, IM_COL32(10, 10, 10, 140));
+	draw->AddRectFilled({ (float)0, (float)y }, { (float)vw, (float)y + h }, IM_COL32(10, 10, 10, 200));
 
 	int n = ImageManagment::getInstance()->getNumberOfImages();
 	for (int i = 0; i < n; i++) {
@@ -284,18 +338,27 @@ void App::drawImageStrip()
 			float x2 = x1 + iw;
 
 			draw->AddImageQuad((void*)img.texId, { x1,y1 }, { x2, y1 }, { x2, y2 }, { x1, y2 }, img.uv[0], img.uv[1], img.uv[2], img.uv[3]);
-
 		}
 		if (i == selected) {
-			draw->AddRect({ (float)x + (w+ STRIP_DISTANCE) * i, (float)y}, {(float)x + (w+ STRIP_DISTANCE) * (i+1)- STRIP_DISTANCE , (float)y + h}, IM_COL32(200, 200, 200, 255));
+			int x1 = x + (w + STRIP_DISTANCE) * i;
+			int y1 = y;
+			int x2 = x + (w + STRIP_DISTANCE) * (i + 1) - STRIP_DISTANCE;
+			int y2 = y + h;
+			draw->AddRect({ (float)x1, (float)y1 }, { (float)x2, (float)y2}, IM_COL32(200, 200, 200, 255));
 		}
 		if (i == selected + hoverSel) {
-			draw->AddRect({ (float)x + (w + STRIP_DISTANCE) * i, (float)y }, { (float)x + (w + STRIP_DISTANCE) * (i + 1) - STRIP_DISTANCE , (float)y + h }, IM_COL32(150, 120, 150, 255));
+			draw->AddRect({ (float)x + (w + STRIP_DISTANCE) * i, (float)y }, { (float)x + (w + STRIP_DISTANCE) * (i + 1) - STRIP_DISTANCE , (float)y + h }, IM_COL32(150, 150, 150, 255));
 		}
 	}
 }
 void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	if (action == GLFW_PRESS && mods & GLFW_MOD_CONTROL) {
+		App::ctrlDown = true;
+	}
+	if (action == GLFW_RELEASE && (mods & GLFW_MOD_CONTROL) == 0) {
+		App::ctrlDown = false;
+	}
 	if (key == GLFW_KEY_LEFT && action == GLFW_RELEASE)
 		ImageManagment::getInstance()->prev();
 	else if (key == GLFW_KEY_RIGHT && action == GLFW_RELEASE)
@@ -327,6 +390,10 @@ void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods)
 }
 void scroll(GLFWwindow* window, double xoffset, double yoffset)
 {
+	if (App::ctrlDown) {
+		ImageManagment::getInstance()->changeAngle(-yoffset / 50.0);
+		return;
+	}
 	if (yoffset > 0) {
 		ImageManagment::getInstance()->increaseZoom();
 	}
@@ -334,9 +401,25 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset)
 		ImageManagment::getInstance()->decreaseZoom();
 	}
 }
+void mouse_callback(GLFWwindow* window, int button, int action, int mods)
+{
+}
 void mouseClick(GLFWwindow* window, int button, int action, int mods) {
-	if (ImGui::GetIO().WantCaptureMouse)
+	if (ImGui::GetIO().WantCaptureMouse) {
+		//if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
+		//	App::holdingWindow = true;
+		//}
+		//if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
+		//	App::holdingWindow = false;
+		//}
 		return;
+	}
+	if (button == GLFW_MOUSE_BUTTON_2 && action == GLFW_PRESS) {
+		App::rightClickDown = true;
+	}
+	if (button == GLFW_MOUSE_BUTTON_2 && action == GLFW_RELEASE) {
+		App::rightClickDown = false;
+	}
 	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
 		App::leftClickDown = true;
 	}
@@ -380,7 +463,16 @@ void mouseMoving(GLFWwindow* window, double xpos, double ypos) {
 
 		ImageManagment::getInstance()->addTranslation(xpos - App::mousePosition.x, ypos - App::mousePosition.y);
 	}
+	//if (App::holdingWindow) {
+	//	int posX, posY, windowWidth, windowHeight;
+	//	glfwGetWindowPos(window, &posX, &posY);
+	//	glfwGetWindowSize(window, &windowWidth, &windowHeight);
+	//	glfwSetWindowMonitor(window, nullptr, posX + xpos - App::mousePosition.x, posY + ypos - App::mousePosition.y, windowWidth, windowHeight, 0);
+	//}
 	App::mousePosition = { (float)xpos, (float)ypos };
 }
 bool App::leftClickDown = false;
+bool App::ctrlDown = false;
+bool App::rightClickDown = false;
+bool App::holdingWindow = true;
 ImVec2 App::mousePosition = { 0, 0 };
