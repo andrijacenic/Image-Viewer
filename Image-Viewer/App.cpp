@@ -129,6 +129,14 @@ void App::update()
 {
 	drawImage();
 	drawImageStrip();
+	if (App::shouldToggleFullscreen) {
+		shouldToggleFullscreen = false;
+		if (isFullScreen) {
+			toggleFullScreen();
+		}
+	}
+	if (isFullScreen)
+		return;
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
@@ -225,8 +233,6 @@ void App::update()
 		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().w);
 		text += " height : ";
 		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().h);
-		text += " zoom: ";
-		text += std::to_string(ImageManagment::getInstance()->getZoom());
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(text.c_str()).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
 		ImGui::Text(text.c_str());
 
@@ -392,7 +398,7 @@ void App::drawImageStrip()
 				ImVec2 p3 = { (float)((x2 - px) * cos(angle) - (y2 - py) * sin(angle) + px), (float)((x2 - px) * sin(angle) + (y2 - py) * cos(angle) + py) };
 				ImVec2 p4 = { (float)((x1 - px) * cos(angle) - (y2 - py) * sin(angle) + px), (float)((x1 - px) * sin(angle) + (y2 - py) * cos(angle) + py) };
 
-				draw->AddQuad(p1, p2, p3, p4, IM_COL32(255, 255, 255, 255));
+				draw->AddQuad(p1, p2, p3, p4, IM_COL32(255, 255, 255, 255), 2.0f);
 
 			}
 
@@ -416,6 +422,9 @@ void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods)
 	}
 	if (action == GLFW_RELEASE && (mods & GLFW_MOD_CONTROL) == 0) {
 		App::ctrlDown = false;
+	}
+	if (action == GLFW_RELEASE && key == GLFW_KEY_ESCAPE) {
+		App::shouldToggleFullscreen = true;
 	}
 	if (key == GLFW_KEY_LEFT && action == GLFW_RELEASE)
 		ImageManagment::getInstance()->prev();
@@ -533,4 +542,5 @@ bool App::leftClickDown = false;
 bool App::ctrlDown = false;
 bool App::rightClickDown = false;
 bool App::holdingWindow = true;
+bool App::shouldToggleFullscreen = false;
 ImVec2 App::mousePosition = { 0, 0 };

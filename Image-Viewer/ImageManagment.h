@@ -67,7 +67,7 @@ public:
 		shouldReloadImages = true;
 		reloadImagesMutex.unlock();
 		resetAll();
-		selectedIndex = selectedIndex < images.size() - 1 ? selectedIndex + 1 : selectedIndex;
+		selectedIndex = selectedIndex < (images.size() - 1) ? selectedIndex + 1 : selectedIndex;
 	}
 	void prev() {
 		reloadImagesMutex.lock();

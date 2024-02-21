@@ -8,7 +8,7 @@
 #include <mutex>
 #include "FileDialog.h"
 
-#define STRIP_DISTANCE 120
+#define STRIP_DISTANCE 160
 class App
 {
 public:
@@ -20,6 +20,7 @@ public:
 	static bool holdingWindow;
 	static ImVec2 mousePosition;
 	static int hoverSel;
+	static bool shouldToggleFullscreen;
 	int quality = 80;
 
 	App(std::string file, std::string icon) {
