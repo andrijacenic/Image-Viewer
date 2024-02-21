@@ -150,12 +150,12 @@ Image ImageManagment::getImageAt(int i) {
 }
 void ImageManagment::increaseZoom()
 {
-	zoom += (zoom-0.75f) / 10;
+	zoom += (zoom-0.85f) / 10;
 }
 void ImageManagment::decreaseZoom()
 {
-	if(zoom > 0.75f)
-		zoom -= (zoom - 0.75f) / 10;
+	if(zoom > 0.85f)
+		zoom -= (zoom - 0.85f) / 10;
 }
 void ImageManagment::rotateCurrentImage(int dir)
 {
@@ -261,11 +261,11 @@ void ImageManagment::loadCloseImages()
 		}
 		else {
 			counter = 0;
-			if (selectedIndex - j >= 0 && images[selectedIndex - j].texId != -1) {
+			if (selectedIndex - j >= 0) {
 				unloadImage(&images[selectedIndex - j]);
 				counter++;
 			}
-			if (selectedIndex + j < (int)images.size() && images[selectedIndex + j].texId != -1) {
+			if (selectedIndex + j < (int)images.size()) {
 				unloadImage(&images[selectedIndex + j]);
 				counter++;
 			}

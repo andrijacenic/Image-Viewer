@@ -95,6 +95,7 @@ public:
 	void changeAngle(float a) { angle += a; }
 	float getTranslationX() { return translationX; }
 	float getTranslationY() { return translationY; }
+	ImVec2 getTranslation() { return { translationX, translationY }; }
 
 	void addTranslation(float x, float y) {
 		translationX += x;

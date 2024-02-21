@@ -8,7 +8,7 @@
 #include <mutex>
 #include "FileDialog.h"
 
-#define STRIP_DISTANCE 20
+#define STRIP_DISTANCE 120
 class App
 {
 public:
@@ -45,6 +45,7 @@ private:
 	std::string iniFileLocation;
 	std::vector<std::thread> threads;
 	int windowWidth = 0, windowHeight = 0, posX = 0, posY = 0;
+	float imageX = 0, imageY = 0, imageWidth = 0, imageHeight = 0, viewWidth = 0, viewHeight = 0;
 	bool isFullScreen = false;
 };
 void mouseClick(GLFWwindow* window, int button, int action, int mods);

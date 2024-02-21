@@ -225,6 +225,8 @@ void App::update()
 		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().w);
 		text += " height : ";
 		text += std::to_string(ImageManagment::getInstance()->getCurrentImage().h);
+		text += " zoom: ";
+		text += std::to_string(ImageManagment::getInstance()->getZoom());
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(text.c_str()).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
 		ImGui::Text(text.c_str());
 
@@ -276,7 +278,8 @@ void App::drawImage()
 	int w, h;
 	glfwGetFramebufferSize(window, &w, &h);
 	h = h * 5 / 6;
-
+	viewWidth = w;
+	viewHeight = h;
 	if (currImage.texId == -1) {
 		draw->AddRectFilled({ 0, 0 }, { (float)w , (float) h }, IM_COL32(10, 10, 10, 255));
 		return;
@@ -286,23 +289,38 @@ void App::drawImage()
 	double scale = min((double)h / (double)ih, (double)w / (double) iw);
 	iw = scale * currImage.w;
 	ih = scale * currImage.h;
-	int x = ((w - iw) >> 1) + ImageManagment::getInstance()->getTranslationX();
-	int y = ((h - ih) >> 1) + ImageManagment::getInstance()->getTranslationY();
 
-	//New x : x2 = (x1 - px) * cos(θ_rad) - (y1 - py) * sin(θ_rad) + px
-	//New y : y2 = (x1 - px) * sin(θ_rad) + (y1 - py) * cos(θ_rad) + py
+	ImVec2 t = ImageManagment::getInstance()->getTranslation();
+	t = { t.x * iw, t.y * ih };
 
-	float x1 = (float)x + (1.0f - zoom) * iw;
-	float y1 = (float)y + (1.0f - zoom) * ih;
-	float x2 = (float)x + iw * zoom - (1.0f - zoom) * iw;
-	float y2 = (float)y + ih * zoom - (1.0f - zoom) * ih;
-	float px = x1 + (iw * zoom - (1.0f - zoom) * iw) / 2;
-	float py = y1 + (ih * zoom - (1.0f - zoom) * ih) / 2;
+	iw *= zoom;
+	ih *= zoom;
+
+	float x = (viewWidth - iw) / 2;
+	float y = (viewHeight - ih) / 2;
+
+	float x1 = x;
+	float y1 = y;
+	imageX = x1;
+	imageY = y1;
+	float x2 = x1 + iw;
+	float y2 = y1 + ih;
+	imageWidth = x2 - x1;
+	imageHeight = y2 - y1;
 	float angle = ImageManagment::getInstance()->getAngle();
+
+	float px = (x1 + x2) / 2;
+	float py = (y1 + y2) / 2;
 	ImVec2 p1 = { (float)((x1 - px) * cos(angle) - (y1 - py) * sin(angle) + px), (float)((x1 - px) * sin(angle) + (y1 - py) * cos(angle) + py )};
 	ImVec2 p2 = { (float)((x2 - px) * cos(angle) - (y1 - py) * sin(angle) + px), (float)((x2 - px) * sin(angle) + (y1 - py) * cos(angle) + py) };
 	ImVec2 p3 = { (float) ((x2 - px) * cos(angle) - (y2 - py) * sin(angle) + px), (float)((x2 - px) * sin(angle) + (y2 - py) * cos(angle) + py) };
 	ImVec2 p4 = { (float)((x1 - px) * cos(angle) - (y2 - py) * sin(angle) + px), (float) ((x1 - px) * sin(angle) + (y2 - py) * cos(angle) + py) };
+	
+	p1 = { p1.x + t.x, p1.y + t.y };
+	p2 = { p2.x + t.x, p2.y + t.y };
+	p3 = { p3.x + t.x, p3.y + t.y };
+	p4 = { p4.x + t.x, p4.y + t.y };
+
 	draw->AddImageQuad((void*)currImage.texId, p1, p2, p3, p4, currImage.uv[0], currImage.uv[1], currImage.uv[2], currImage.uv[3]);
 	
 }
@@ -321,34 +339,74 @@ void App::drawImageStrip()
 	draw->AddRectFilled({ (float)0, (float)y }, { (float)vw, (float)y + h }, IM_COL32(10, 10, 10, 200));
 
 	int n = ImageManagment::getInstance()->getNumberOfImages();
-	for (int i = 0; i < n; i++) {
+	int i = 0;
+	while (i <= n) {
+		if (i == selected) {
+			i++;
+			continue;
+		}
+		if (i == n) {
+			i = selected;
+		}
 		Image img = ImageManagment::getInstance()->getImageAt(i);
-		int ih = img.h, iw = img.w;
+		float ih = img.h, iw = img.w;
 		double scale = min((double)h / (double)ih, (double)w / (double)iw);
 		iw = scale * img.w;
 		ih = scale * img.h;
 		if (img.texId == -1) {
-			draw->AddRectFilled({ (float)x + (w + STRIP_DISTANCE) * i, (float)y }, { (float)x + (w+ STRIP_DISTANCE) * (i + 1)- STRIP_DISTANCE , (float)y + h }, IM_COL32(10, 10, 10, 255));
+			draw->AddRectFilled({ (float)x + (w + STRIP_DISTANCE) * i, (float)y }, { (float)x + (w + STRIP_DISTANCE) * (i + 1) - STRIP_DISTANCE , (float)y + h }, IM_COL32(10, 10, 10, 255));
 		}
 		else {
-			float y1 = (float)(y + ((h - ih) >> 1));
+			float y1 = (float)(y + ((h - ih) / 2));
 			float x1 = (float)x + (w + STRIP_DISTANCE) * i;
 
 			float y2 = y1 + ih;
 			float x2 = x1 + iw;
-
 			draw->AddImageQuad((void*)img.texId, { x1,y1 }, { x2, y1 }, { x2, y2 }, { x1, y2 }, img.uv[0], img.uv[1], img.uv[2], img.uv[3]);
+
+
+			if (i == selected) {
+				float zoom = ImageManagment::getInstance()->getZoom();
+				ImVec2 t = { -ImageManagment::getInstance()->getTranslationX() * iw / zoom, -ImageManagment::getInstance()->getTranslationY() * ih / zoom};
+				ImVec2 q1 = { x1 + iw / 2 - viewWidth / imageWidth * iw / 2, y1 + ih / 2 - viewHeight / imageHeight * ih / 2 };
+				ImVec2 q2 = { q1.x + viewWidth / imageWidth * iw, q1.y + viewHeight / imageHeight * ih };
+				//draw->AddRect(q1, q2, IM_COL32(255, 255, 255, 255));
+
+				float angle = -ImageManagment::getInstance()->getAngle();
+
+				float px = (x1 + x2) / 2;
+				float py = (y1 + y2) / 2;
+
+				x1 = q1.x + t.x;
+				y1 = q1.y + t.y;
+				x2 = q2.x + t.x;
+				y2 = q2.y + t.y;
+				
+				//p1 = { x1 + t.x, y1 + t.y };
+				//p2 = { x2 + t.x, y1 + t.y };
+				//p3 = { x2 + t.x, y2 + t.y };
+				//p4 = { x1 + t.x, y2 + t.y };
+
+				ImVec2 p1 = { (float)((x1 - px) * cos(angle) - (y1 - py) * sin(angle) + px), (float)((x1 - px) * sin(angle) + (y1 - py) * cos(angle) + py) };
+				ImVec2 p2 = { (float)((x2 - px) * cos(angle) - (y1 - py) * sin(angle) + px), (float)((x2 - px) * sin(angle) + (y1 - py) * cos(angle) + py) };
+				ImVec2 p3 = { (float)((x2 - px) * cos(angle) - (y2 - py) * sin(angle) + px), (float)((x2 - px) * sin(angle) + (y2 - py) * cos(angle) + py) };
+				ImVec2 p4 = { (float)((x1 - px) * cos(angle) - (y2 - py) * sin(angle) + px), (float)((x1 - px) * sin(angle) + (y2 - py) * cos(angle) + py) };
+
+				draw->AddQuad(p1, p2, p3, p4, IM_COL32(255, 255, 255, 255));
+
+			}
+
 		}
-		if (i == selected) {
-			int x1 = x + (w + STRIP_DISTANCE) * i;
-			int y1 = y;
-			int x2 = x + (w + STRIP_DISTANCE) * (i + 1) - STRIP_DISTANCE;
-			int y2 = y + h;
-			draw->AddRect({ (float)x1, (float)y1 }, { (float)x2, (float)y2}, IM_COL32(200, 200, 200, 255));
-		}
-		if (i == selected + hoverSel) {
+		if (i == selected + hoverSel && hoverSel != 0) {
 			draw->AddRect({ (float)x + (w + STRIP_DISTANCE) * i, (float)y }, { (float)x + (w + STRIP_DISTANCE) * (i + 1) - STRIP_DISTANCE , (float)y + h }, IM_COL32(150, 150, 150, 255));
 		}
+		if (i == selected) {
+			break;
+		}
+		i++;
+	}
+	for (int i = 0; i < n; i++) {
+
 	}
 }
 void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -366,16 +424,16 @@ void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods)
 
 	float x = 0, y = 0;
 	if (key == GLFW_KEY_W && action == GLFW_PRESS) {
-		y += 10;
+		y += 0.010;
 	}
 	if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-		y -= 10;
+		y -= 0.010;
 	}
 	if (key == GLFW_KEY_A && action == GLFW_PRESS) {
-		x += 10;
+		x += 0.010;
 	}
 	if (key == GLFW_KEY_D && action == GLFW_PRESS) {
-		x -= 10;
+		x -= 0.010;
 	}
 	ImageManagment::getInstance()->addTranslation(x, y);
 
@@ -422,9 +480,6 @@ void mouseClick(GLFWwindow* window, int button, int action, int mods) {
 	}
 	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
 		App::leftClickDown = true;
-	}
-	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
-		App::leftClickDown = false;
 
 		int w, h, ih;
 		int iw;
@@ -444,6 +499,9 @@ void mouseClick(GLFWwindow* window, int button, int action, int mods) {
 		//	ImageManagment::getInstance()->changeSelectedIndex(1);
 		//}
 	}
+	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
+		App::leftClickDown = false;
+	}
 }
 void mouseMoving(GLFWwindow* window, double xpos, double ypos) {
 	int w, h, ih;
@@ -461,7 +519,7 @@ void mouseMoving(GLFWwindow* window, double xpos, double ypos) {
 	}
 	if (App::leftClickDown) {
 
-		ImageManagment::getInstance()->addTranslation(xpos - App::mousePosition.x, ypos - App::mousePosition.y);
+		ImageManagment::getInstance()->addTranslation((xpos - App::mousePosition.x) / w, (ypos - App::mousePosition.y)/ih);
 	}
 	//if (App::holdingWindow) {
 	//	int posX, posY, windowWidth, windowHeight;
