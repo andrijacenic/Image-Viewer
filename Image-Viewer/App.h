@@ -7,6 +7,7 @@
 #include "ImageManagment.h"
 #include <mutex>
 #include "FileDialog.h"
+#include "Shader.h"
 
 #define STRIP_DISTANCE 160
 class App
@@ -40,6 +41,7 @@ public:
 	void toggleFullScreen();
 
 private:
+	Shader shader;
 	Image currImage;
 	std::string currentFile;
 	std::string iconPath;

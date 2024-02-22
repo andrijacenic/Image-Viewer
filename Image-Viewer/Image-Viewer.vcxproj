@@ -137,6 +137,7 @@
     <ClCompile Include="FileDialog.cpp" />
     <ClCompile Include="ImageManagment.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Shader.cpp" />
     <ClCompile Include="stb_image.cpp" />
     <ClCompile Include="stb_image_write.cpp" />
   </ItemGroup>
@@ -146,6 +147,7 @@
     <ClInclude Include="ImageManagment.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="resource1.h" />
+    <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_image_write.h" />
   </ItemGroup>

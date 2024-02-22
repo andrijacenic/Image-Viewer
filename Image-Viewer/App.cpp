@@ -41,6 +41,9 @@ void App::runApp()
 	const double fpsLimit = 1.0 / 15.0;
 	double lastUpdateTime = 0;  // number of seconds since the last loop
 	double lastFrameTime = 0;
+	shader.loadShader();
+
+	glEnable(GL_TEXTURE_2D);
 
 	while (!glfwWindowShouldClose(window)) {
 		double now = glfwGetTime();
@@ -57,10 +60,10 @@ void App::runApp()
 		
 			ImGui::NewFrame();
 
-			update();
 
 			glClearColor(0.1, 0.1, 0.1, 1);
 			glClear(GL_COLOR_BUFFER_BIT);
+			update();
 
 			ImGui::Render();
 			int w, h;
@@ -283,6 +286,7 @@ void App::drawImage()
 
 	int w, h;
 	glfwGetFramebufferSize(window, &w, &h);
+	float rw = w, rh = h;
 	h = h * 5 / 6;
 	viewWidth = w;
 	viewHeight = h;
@@ -326,8 +330,40 @@ void App::drawImage()
 	p2 = { p2.x + t.x, p2.y + t.y };
 	p3 = { p3.x + t.x, p3.y + t.y };
 	p4 = { p4.x + t.x, p4.y + t.y };
+	//draw->AddImageQuad((void*)currImage.texId, p1, p2, p3, p4, currImage.uv[0], currImage.uv[1], currImage.uv[2], currImage.uv[3]);
+	p1.x = p1.x / rw * 2.0f - 1.0f;
+	p1.y = -p1.y / rh * 2.0f + 1.0f;
 
-	draw->AddImageQuad((void*)currImage.texId, p1, p2, p3, p4, currImage.uv[0], currImage.uv[1], currImage.uv[2], currImage.uv[3]);
+	p2.x = p2.x / rw * 2.0f - 1.0f;
+	p2.y = -p2.y / rh * 2.0f + 1.0f;
+
+	p3.x = p3.x / rw * 2.0f - 1.0f;
+	p3.y = -p3.y / rh * 2.0f + 1.0f;
+
+	p4.x = p4.x / rw * 2.0f - 1.0f;
+	p4.y = -p4.y / rh * 2.0f + 1.0f;
+
+	shader.activate();
+	GLint textureLocation = glGetUniformLocation(shader.shaderProgramID, "myTexture");
+	glActiveTexture(GL_TEXTURE0);
+
+	glBindTexture(GL_TEXTURE_2D, currImage.texId);
+	glUniform1i(textureLocation, 0);
+
+	glBegin(GL_QUADS);
+
+	glTexCoord2f(currImage.uv[0].x, currImage.uv[0].y);
+	glVertex3f(p1.x, p1.y, 0.0f);
+	glTexCoord2f(currImage.uv[1].x, currImage.uv[1].y);
+	glVertex3f(p2.x, p2.y, 0.0f);
+	glTexCoord2f(currImage.uv[2].x, currImage.uv[2].y);
+	glVertex3f(p3.x, p3.y, 0.0f);
+	glTexCoord2f(currImage.uv[3].x, currImage.uv[3].y);
+	glVertex3f(p4.x, p4.y, 0.0f);
+	glEnd();
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	shader.deactivate();
 	
 }
 
