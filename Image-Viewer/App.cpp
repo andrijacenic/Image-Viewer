@@ -222,7 +222,8 @@ void App::update()
 			}
 			ImGui::Separator();
 			ImGui::SliderFloat("Contrast", &ImageManagment::getInstance()->getCurrentImage()->mod.contrast , 0.0f, 2.0f, "%.3f");
-			ImGui::SliderFloat("Saturation", &ImageManagment::getInstance()->getCurrentImage()->mod.saturation, 0.0f, 2.0f,"%.3f");
+			ImGui::SliderFloat("Saturation", &ImageManagment::getInstance()->getCurrentImage()->mod.saturation, 0.0f, 4.0f, "%.3f");
+			ImGui::SliderFloat("Hue", &ImageManagment::getInstance()->getCurrentImage()->mod.hue, -180.0f, 180.0f,"%.0f");
 			ImGui::EndMenu();
 		}
 		if (ImGui::MenuItem("+")) {

@@ -55,6 +55,7 @@ private:
 	uniform sampler2D sampler;
 	uniform float contrast;
 	uniform float saturation;
+	uniform float hue;
 
 	vec3 rgb2hsv(vec3 c)
 	{
@@ -80,11 +81,18 @@ private:
 		hsv.g = min(max(hsv.g * sat, 0.0), 1.0);
 		return hsv2rgb(hsv);
 	}
+	vec3 changeHue(vec3 col, float hue)
+	{
+		vec3 hsv = rgb2hsv(col);
+		hsv.r = hsv.r + hue;
+		return hsv2rgb(hsv);
+	}
 	void main()
 	{
 		vec3 color = texture2D(sampler, outUv).rgb;
 		color = vec3(min(color.r * contrast,1), min(color.g * contrast,1), min(color.b * contrast,1));
 		color = changeSaturation(color, saturation);
+		color = changeHue(color, hue);
 		gl_FragColor = vec4(color, 1.0);
 	}
 	)END";

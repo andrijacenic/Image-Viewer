@@ -5,4 +5,5 @@ struct ImageShaderModification {
 	ImVec4 colors[4] = { ImVec4(1,1,1,1), ImVec4(1,1,1,1), ImVec4(1,1,1,1), ImVec4(1,1,1,1) };
 	float contrast = 1.0f;
 	float saturation = 1.0f;
+	float hue = 0.0f;
 };

@@ -99,6 +99,7 @@ void Shader::drawImageWithModification(int texID, Image* image)
 
 	U1f("contrast", image->mod.contrast);
 	U1f("saturation", image->mod.saturation);
+	U1f("hue", image->mod.hue / 360.0);
 
 	glDrawArrays(GL_QUADS, 0, 4);
 
