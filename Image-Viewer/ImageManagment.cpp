@@ -289,7 +289,7 @@ void saveImage(Image image, std::string newFilePath, int type, int quality)
 	if (newFilePath.empty())
 		newFilePath = image.imagePath;
 	int width, height, num_channels;
-	char* data = (char*)stbi_load(image.imagePath.c_str(), &width, &height, &num_channels, 0);
+	unsigned char* data = stbi_load(image.imagePath.c_str(), &width, &height, &num_channels, 0);
 	if (image.flipX) {
 		flipDataX(width, height, data);
 	}
@@ -320,6 +320,12 @@ void saveImage(Image image, std::string newFilePath, int type, int quality)
 	default:
 		break;
 	}
+	if (image.mod.contrast != 1.0) {
+		contrast(width, height, data, image.mod.contrast);
+	}
+	if (image.mod.saturation != 1.0) {
+		saturation(width, height, data, image.mod.saturation);
+	}
 	switch (type)
 	{
 	case PNG:
@@ -338,7 +344,7 @@ void saveImage(Image image, std::string newFilePath, int type, int quality)
 	stbi_image_free(data);
 }
 
-void flipDataX(int width, int height, char* data)
+void flipDataX(int width, int height, unsigned char* data)
 {
 	for (int y = 0; y < height; ++y) {
 		for (int i = 0; i < width / 2; ++i) {
@@ -349,7 +355,7 @@ void flipDataX(int width, int height, char* data)
 	}
 }
 
-void flipDataY(int width, int height, char* data)
+void flipDataY(int width, int height, unsigned char* data)
 {
 	for (int y = 0; y < height / 2; ++y) {
 		for (int x = 0; x < width; ++x) {
@@ -360,7 +366,7 @@ void flipDataY(int width, int height, char* data)
 	}
 }
 
-void rotateData90(int width, int height, char* data)
+void rotateData90(int width, int height, unsigned char* data)
 {
 	char* tmp = new char[width * height * 3];
 	for (int y = 0; y < height; ++y) {
@@ -378,4 +384,115 @@ void rotateData90(int width, int height, char* data)
 		}
 	}
 	delete[] tmp;
+}
+
+void contrast(int width, int height, unsigned char* data, float contrast)
+{
+	int p = 0;
+	for (int y = 0; y < height; ++y) {
+		for (int x = 0; x < width; ++x) {
+			p = (float)(data[(y * width + x) * 3]) * contrast;
+			data[(y * width + x) * 3] = p > 255 ? 255 : (unsigned char)p;
+
+			p = (float)(data[(y * width + x) * 3 + 1]) * contrast;
+			data[(y * width + x) * 3 + 1] = p > 255 ? 255 : (unsigned char)p;
+
+			p = (float)(data[(y * width + x) * 3 + 2]) * contrast;
+			data[(y * width + x) * 3 + 2] = p > 255 ? 255 : (unsigned char)p;
+		}
+	}
+}
+
+void saturation(int width, int height, unsigned char* data, float saturation)
+{
+	int p;
+	unsigned char color[3] = { 0, 0, 0 };
+	for (int y = 0; y < height; ++y) {
+		for (int x = 0; x < width; ++x) {
+			color[0] = data[(y * width + x) * 3];
+			color[1] = data[(y * width + x) * 3 + 1];
+			color[2] = data[(y * width + x) * 3 + 2];
+			rgb2hsv(color);
+			p = ((int)color[1] * saturation);
+			color[1] = p > 100 ? 100 : (unsigned char)p;
+			hsv2rgb(color);
+			data[(y * width + x) * 3] = color[0];
+			data[(y * width + x) * 3 + 1] = color[1];
+			data[(y * width + x) * 3 + 2] = color[2];
+		}
+	}
+}
+
+
+void rgb2hsv(unsigned char* color)
+{
+	const float k0 = 0.0f;
+	const float k1 = -1.0f / 3.0f;
+	const float k2 = 2.0f / 3.0f;
+	const float k3 = -1.0f;
+
+	float r = color[0] / 255.0f;
+	float g = color[1] / 255.0f;
+	float b = color[2] / 255.0f;
+
+	float p[4] = {
+		std::fmax(b, g),
+		std::fmin(b, g),
+		k2 * std::fmin(b, g) + k3,
+		std::fmax(r, std::fmax(b, g))
+	};
+	float q[4] = {
+		p[1],
+		std::fmax(p[0], r),
+		k1* std::fmin(p[0], r) + k3,
+		std::fmax(p[2], p[3])
+	};
+	float d = q[3] - std::fmin(q[1], q[2]);
+	float epsilon = 1e-10f;
+	float hsv[3] = {
+		std::abs(q[2] + (q[1] - q[2]) / (6.0f * d + epsilon)),
+		d / (q[3] + epsilon),
+		q[3]
+	};
+	color[0] = (unsigned int)(hsv[0] * 255);
+	color[1] = (unsigned int)(hsv[1] * 255);
+	color[2] = (unsigned int)(hsv[2] * 255);
+}
+
+void hsv2rgb(unsigned char* color)
+{
+	const float k0 = 1.0f;
+	const float k1 = 2.0f / 3.0f;
+	const float k2 = 1.0f / 3.0f;
+	const float k3 = 3.0f;
+
+	float h = color[0] / 255.0;
+	float s = color[1] / 255.0;
+	float v = color[2] / 255.0;
+
+	h = std::fmod(h, 1.0f);
+
+	float p[3] = {
+		h + k2,
+		h + k1,
+		h
+	};
+	int i = std::floor(h * 6.0f);
+	float f = h * 6.0f - i;
+	float q[4] = {
+		v,
+		v * (1.0f - s),
+		v * (1.0f - s * f),
+		v * (1.0f - s * (1.0f - f))
+	};
+	if (i % 2 == 0) {
+		color[0] = (unsigned char)(q[0] * 255);
+		color[1] = (unsigned char)(q[1] * 255);
+		color[2] = (unsigned char)(q[2] * 255);
+	}
+	else {
+		color[0] = (unsigned char)(q[3] * 255);
+		color[1] = (unsigned char)(q[0] * 255);
+		color[2] = (unsigned char)(q[1] * 255);
+	}
 }

@@ -132,6 +132,14 @@ enum SaveType {
 // Can be called in a thread
 void saveImage(Image image, std::string newFilePath = std::string(), int type = PNG, int quality = 80);
 
-void flipDataX(int width, int height, char* data); 
-void flipDataY(int width, int height, char* data);
-void rotateData90(int width, int height, char* data);
+void flipDataX(int width, int height, unsigned char* data);
+void flipDataY(int width, int height, unsigned char* data);
+void rotateData90(int width, int height, unsigned char* data);
+
+void contrast(int width, int height, unsigned char* data, float contrast);
+
+void saturation(int width, int height, unsigned char* data, float saturation);
+
+void rgb2hsv(unsigned char* color);
+
+void hsv2rgb(unsigned char* color);

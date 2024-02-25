@@ -335,7 +335,6 @@ void App::drawImage()
 	p2 = { p2.x + t.x, p2.y + t.y };
 	p3 = { p3.x + t.x, p3.y + t.y };
 	p4 = { p4.x + t.x, p4.y + t.y };
-	//draw->AddImageQuad((void*)currImage.texId, p1, p2, p3, p4, currImage.uv[0], currImage.uv[1], currImage.uv[2], currImage.uv[3]);
 
 	currImage->mod.positions[0].x = p1.x / rw * 2.0f - 1.0f;
 	currImage->mod.positions[0].y = -p1.y / rh * 2.0f + 1.0f;
