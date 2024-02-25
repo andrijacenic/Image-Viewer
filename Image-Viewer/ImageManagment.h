@@ -7,6 +7,7 @@
 #include "glad/glad.h"
 #include <imgui.h>
 #include <functional>
+#include "ImageShaderModification.h"
 namespace fs = std::filesystem;
 #define NUMBER_OF_LOADED_IMAGES 6
 struct Image {
@@ -16,6 +17,7 @@ struct Image {
 	struct ImVec2 uv[4] = { ImVec2(0,0), ImVec2(1,0) ,ImVec2(1,1),ImVec2(0,1) };
 	int rotation = 0;
 	bool flipX = false, flipY = false;
+	ImageShaderModification mod;
 };
 
 class ImageManagment
@@ -58,33 +60,33 @@ public:
 	int loadImages(std::string imagePath);
 	void loadImage(Image* image);
 	void unloadImage(Image* image);
-	Image getCurrentImage();
-	Image getImageAt(int i);
+	Image* getCurrentImage();
+	Image* getImageAt(int i);
 	int getNumberOfImages() { return images.size(); }
 	int getCurrentImageIndex() { return selectedIndex; }
 	void next() {
-		reloadImagesMutex.lock();
-		shouldReloadImages = true;
-		reloadImagesMutex.unlock();
 		resetAll();
 		selectedIndex = selectedIndex < (images.size() - 1) ? selectedIndex + 1 : selectedIndex;
-	}
-	void prev() {
 		reloadImagesMutex.lock();
 		shouldReloadImages = true;
 		reloadImagesMutex.unlock();
+	}
+	void prev() {
 		resetAll();
 		selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : selectedIndex;
+		reloadImagesMutex.lock();
+		shouldReloadImages = true;
+		reloadImagesMutex.unlock();
 	}
 
 	void changeSelectedIndex(int i) {
 		if (i + selectedIndex >= images.size() || i + selectedIndex < 0)
 			return;
+		resetAll();
 		selectedIndex += i;
 		reloadImagesMutex.lock();
 		shouldReloadImages = true;
 		reloadImagesMutex.unlock();
-		resetAll();
 	}
 	float getZoom() { return zoom; }
 	float getAngle() { return angle; }
@@ -103,6 +105,7 @@ public:
 	}
 	void resetTranslation() { translationX = translationY = 0; }
 	void resetAll() {
+		getCurrentImage()->mod = ImageShaderModification();
 		resetZoom();
 		resetAngle();
 		resetTranslation();

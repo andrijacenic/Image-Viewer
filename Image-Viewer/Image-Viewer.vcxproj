@@ -145,6 +145,7 @@
     <ClInclude Include="App.h" />
     <ClInclude Include="FileDialog.h" />
     <ClInclude Include="ImageManagment.h" />
+    <ClInclude Include="ImageShaderModification.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="resource1.h" />
     <ClInclude Include="Shader.h" />

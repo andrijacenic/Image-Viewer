@@ -8,6 +8,7 @@
 #include <mutex>
 #include "FileDialog.h"
 #include "Shader.h"
+#include "ImageShaderModification.h"
 
 #define STRIP_DISTANCE 160
 class App
@@ -39,10 +40,11 @@ public:
 	void drawImageStrip();
 
 	void toggleFullScreen();
-
+	void generateBufffer();
 private:
-	Shader shader;
-	Image currImage;
+	Shader* shader;
+	Image* currImage;
+	unsigned int buffer = 0, buffer2 = 0;
 	std::string currentFile;
 	std::string iconPath;
 	std::string iniFileLocation;

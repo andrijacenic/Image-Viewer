@@ -141,12 +141,10 @@ void ImageManagment::deleteInstance()
 		delete instance;
 	instanceMutex.unlock();
 }
-Image ImageManagment::getImageAt(int i) {
-	Image img;
-	if (i >= 0 && i < images.size())
-		img = images[i];
-	return img;
-
+Image* ImageManagment::getImageAt(int i) {
+	if (i < 0 && i >= images.size())
+		return nullptr;
+	return &images[i];
 }
 void ImageManagment::increaseZoom()
 {
@@ -208,16 +206,16 @@ void ImageManagment::flipImageY(Image* image)
 	image->uv[1] = image->uv[2];
 	image->uv[2] = p;
 }
-Image ImageManagment::getCurrentImage() {
+Image* ImageManagment::getCurrentImage() {
 	if (!imagesMutex.try_lock()) {
-		return Image();
+		return nullptr;
 	}
 	imagesMutex.unlock();
 	std::lock_guard g(imagesMutex);
 	if (selectedIndex >= 0)
-		return images[selectedIndex];
+		return &images[selectedIndex];
 	else
-		return Image();
+		return nullptr;
 }
 void ImageManagment::runManagment(std::string imagePath)
 {
