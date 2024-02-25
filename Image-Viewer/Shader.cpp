@@ -27,7 +27,7 @@ void Shader::loadShader(char* vertexSource, char* fragmentSource)
 	glShaderSource(fragShaderID, 1, &fss, nullptr);
 	glCompileShader(fragShaderID);
 
-	glGetShaderiv(vertShaderID, GL_COMPILE_STATUS, &success);
+	glGetShaderiv(fragShaderID, GL_COMPILE_STATUS, &success);
 	if (!success) {
 		glGetShaderInfoLog(vertShaderID, 512, nullptr, infoLog);
 		std::cerr << "Failed to compile vertex shader: " << infoLog << std::endl;
@@ -99,7 +99,7 @@ void Shader::drawImageWithModification(int texID, Image* image)
 
 	U1f("contrast", image->mod.contrast);
 	U1f("saturation", image->mod.saturation);
-	U1f("hue", image->mod.hue / 360.0);
+	U1f("hue", (image->mod.hue) / 360.0);
 
 	glDrawArrays(GL_QUADS, 0, 4);
 

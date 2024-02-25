@@ -84,7 +84,10 @@ private:
 	vec3 changeHue(vec3 col, float hue)
 	{
 		vec3 hsv = rgb2hsv(col);
-		hsv.r = hsv.r + hue;
+		hsv.r = (hsv.r + hue);
+		if(hsv.r > 1.0){
+			hsv.r = hsv.r - 1.0;
+		}
 		return hsv2rgb(hsv);
 	}
 	void main()
