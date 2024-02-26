@@ -26,6 +26,17 @@ To return to windowed mode press the **esc** key
 #### Save options
 ![Normal viewing](Images/img6.png)
 
+### Comands
+
+- **Q, E** - rotate the image by 90deg
+- **W, A, S, D** - translate the view by a small amount
+- **Scroll** - zoom in/out the view
+- **Ctrl + Scroll** - rotate the view
+- **Click + drag** - move the view
+- **R** - reset the view transformations
+- **<- ->** - change the selected image
+- **Click on the image strip image** - changes the selected image to that image
+
 ### Libraries
 
 Libraries used are : GLFW, Dear ImGui (OpenGL with GLFW), GLAD and stb(stb_image, stb_image_write)
