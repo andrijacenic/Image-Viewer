@@ -136,10 +136,7 @@ void flipDataX(int width, int height, unsigned char* data);
 void flipDataY(int width, int height, unsigned char* data);
 void rotateData90(int width, int height, unsigned char* data);
 
-void contrast(int width, int height, unsigned char* data, float contrast);
+void hsvEdit(int width, int height, unsigned char* data, float hue, float saturation, float value);
 
-void saturation(int width, int height, unsigned char* data, float saturation);
-
-void rgb2hsv(unsigned char* color);
-
-void hsv2rgb(unsigned char* color);
+void HSVtoRGB(float& fR, float& fG, float& fB, float& fH, float& fS, float& fV);
+void RGBtoHSV(float& fR, float& fG, float fB, float& fH, float& fS, float& fV);

@@ -87,14 +87,28 @@ int App::start()
 {
 	if (!glfwInit()) 
 		return -1;
-	glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE);
-	window = glfwCreateWindow(1600, 960, "Image Viewer", nullptr, nullptr);
+
+	GLFWmonitor* m = glfwGetPrimaryMonitor();
+	const GLFWvidmode* mode = glfwGetVideoMode(m);
+
+	int width = mode->width;
+	windowWidth = mode->width * 5 / 6;
+	int height = mode->height;
+	windowHeight = mode->height * 5 / 6;
+	glfwGetMonitorPos(m, &posX, &posY);
+
+	posX += (width - windowWidth) / 2 + 20;
+	posY += (height - windowHeight) / 2 - 40;
+
+	window = glfwCreateWindow(windowWidth, windowHeight, "Image Viewer", nullptr, nullptr);
+	glfwGetWindowPos(window, &posX, &posY);
 	if (!window) {
 		glfwTerminate();
 		return -1;
 	}
 	App::windowMutex.lock();
 	glfwMakeContextCurrent(window);
+
 	if (!iconPath.empty()) {
 		GLFWimage image[1];
 		int chanels = 3;
@@ -221,9 +235,12 @@ void App::update()
 				ImageManagment::getInstance()->changeAngle(-15 * 3.14 / 180);
 			}
 			ImGui::Separator();
-			ImGui::SliderFloat("Contrast", &ImageManagment::getInstance()->getCurrentImage()->mod.contrast , 0.0f, 2.0f, "%.3f");
-			ImGui::SliderFloat("Saturation", &ImageManagment::getInstance()->getCurrentImage()->mod.saturation, 0.0f, 4.0f, "%.3f");
-			ImGui::SliderFloat("Hue", &ImageManagment::getInstance()->getCurrentImage()->mod.hue, 0, 360.0f,"%.0f");
+			ImGui::SliderFloat("Hue", &ImageManagment::getInstance()->getCurrentImage()->mod.hue, 0, 360.0f, "%.0f");
+			ImGui::SliderFloat("Saturation", &ImageManagment::getInstance()->getCurrentImage()->mod.saturation, 0.0f, 4.0f, "%.2f");
+			ImGui::SliderFloat("Brightness", &ImageManagment::getInstance()->getCurrentImage()->mod.brightness, 0, 2.0f,"%.2f");
+			if (ImGui::Button("Reset")) {
+				ImageManagment::getInstance()->resetAll();
+			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::MenuItem("+")) {
@@ -496,9 +513,6 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset)
 	else {
 		ImageManagment::getInstance()->decreaseZoom();
 	}
-}
-void mouse_callback(GLFWwindow* window, int button, int action, int mods)
-{
 }
 void mouseClick(GLFWwindow* window, int button, int action, int mods) {
 	if (ImGui::GetIO().WantCaptureMouse) {

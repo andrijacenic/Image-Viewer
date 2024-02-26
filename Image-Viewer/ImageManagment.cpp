@@ -320,11 +320,8 @@ void saveImage(Image image, std::string newFilePath, int type, int quality)
 	default:
 		break;
 	}
-	if (image.mod.contrast != 1.0) {
-		contrast(width, height, data, image.mod.contrast);
-	}
-	if (image.mod.saturation != 1.0) {
-		saturation(width, height, data, image.mod.saturation);
+	if (image.mod.saturation != 1.0 || image.mod.brightness != 1.0 || image.mod.hue != 0.0) {
+		hsvEdit(width, height, data, image.mod.hue, image.mod.saturation, image.mod.brightness);
 	}
 	switch (type)
 	{
@@ -403,96 +400,117 @@ void contrast(int width, int height, unsigned char* data, float contrast)
 	}
 }
 
-void saturation(int width, int height, unsigned char* data, float saturation)
+void hsvEdit(int width, int height, unsigned char* data, float hue, float saturation, float value)
 {
-	int p;
-	unsigned char color[3] = { 0, 0, 0 };
 	for (int y = 0; y < height; ++y) {
 		for (int x = 0; x < width; ++x) {
-			color[0] = data[(y * width + x) * 3];
-			color[1] = data[(y * width + x) * 3 + 1];
-			color[2] = data[(y * width + x) * 3 + 2];
-			rgb2hsv(color);
-			p = ((int)color[1] * saturation);
-			color[1] = p > 100 ? 100 : (unsigned char)p;
-			hsv2rgb(color);
-			data[(y * width + x) * 3] = color[0];
-			data[(y * width + x) * 3 + 1] = color[1];
-			data[(y * width + x) * 3 + 2] = color[2];
+			unsigned char* pixel = data + y * width * 3 + x * 3;
+
+			float r = ((float)pixel[0]) / 255.0f;
+			float g = ((float)pixel[1]) / 255.0f;
+			float b = ((float)pixel[2]) / 255.0f;
+			float h = 0, s = 0, v = 0;
+
+			RGBtoHSV(r, g, b, h, s, v);
+
+			h += hue;
+			h = h > 360.0 ? h - 360.0 : h;
+			s *= saturation;
+			s = s > 1.0 ? 1.0 : s;
+			v *= value;
+			v = v > 1.0 ? 1.0 : v;
+
+			HSVtoRGB(r, g, b, h, s, v);
+			
+			pixel[0] = (unsigned char)(r * 255.0f);
+			pixel[1] = (unsigned char)(g * 255.0f);
+			pixel[2] = (unsigned char)(b * 255.0f);
 		}
 	}
 }
 
+// Thanks for the conversion :  https://gist.github.com/fairlight1337/4935ae72bcbcc1ba5c72
+// r g b s v	[0, 1]
+// h			[0, 360]
+void RGBtoHSV(float& fR, float& fG, float fB, float& fH, float& fS, float& fV) {
+	float fCMax = max(max(fR, fG), fB);
+	float fCMin = min(min(fR, fG), fB);
+	float fDelta = fCMax - fCMin;
 
-void rgb2hsv(unsigned char* color)
-{
-	const float k0 = 0.0f;
-	const float k1 = -1.0f / 3.0f;
-	const float k2 = 2.0f / 3.0f;
-	const float k3 = -1.0f;
+	if (fDelta > 0) {
+		if (fCMax == fR) {
+			fH = 60 * (fmod(((fG - fB) / fDelta), 6));
+		}
+		else if (fCMax == fG) {
+			fH = 60 * (((fB - fR) / fDelta) + 2);
+		}
+		else if (fCMax == fB) {
+			fH = 60 * (((fR - fG) / fDelta) + 4);
+		}
 
-	float r = color[0] / 255.0f;
-	float g = color[1] / 255.0f;
-	float b = color[2] / 255.0f;
+		if (fCMax > 0) {
+			fS = fDelta / fCMax;
+		}
+		else {
+			fS = 0;
+		}
 
-	float p[4] = {
-		std::fmax(b, g),
-		std::fmin(b, g),
-		k2 * std::fmin(b, g) + k3,
-		std::fmax(r, std::fmax(b, g))
-	};
-	float q[4] = {
-		p[1],
-		std::fmax(p[0], r),
-		k1* std::fmin(p[0], r) + k3,
-		std::fmax(p[2], p[3])
-	};
-	float d = q[3] - std::fmin(q[1], q[2]);
-	float epsilon = 1e-10f;
-	float hsv[3] = {
-		std::abs(q[2] + (q[1] - q[2]) / (6.0f * d + epsilon)),
-		d / (q[3] + epsilon),
-		q[3]
-	};
-	color[0] = (unsigned int)(hsv[0] * 255);
-	color[1] = (unsigned int)(hsv[1] * 255);
-	color[2] = (unsigned int)(hsv[2] * 255);
-}
-
-void hsv2rgb(unsigned char* color)
-{
-	const float k0 = 1.0f;
-	const float k1 = 2.0f / 3.0f;
-	const float k2 = 1.0f / 3.0f;
-	const float k3 = 3.0f;
-
-	float h = color[0] / 255.0;
-	float s = color[1] / 255.0;
-	float v = color[2] / 255.0;
-
-	h = std::fmod(h, 1.0f);
-
-	float p[3] = {
-		h + k2,
-		h + k1,
-		h
-	};
-	int i = std::floor(h * 6.0f);
-	float f = h * 6.0f - i;
-	float q[4] = {
-		v,
-		v * (1.0f - s),
-		v * (1.0f - s * f),
-		v * (1.0f - s * (1.0f - f))
-	};
-	if (i % 2 == 0) {
-		color[0] = (unsigned char)(q[0] * 255);
-		color[1] = (unsigned char)(q[1] * 255);
-		color[2] = (unsigned char)(q[2] * 255);
+		fV = fCMax;
 	}
 	else {
-		color[0] = (unsigned char)(q[3] * 255);
-		color[1] = (unsigned char)(q[0] * 255);
-		color[2] = (unsigned char)(q[1] * 255);
+		fH = 0;
+		fS = 0;
+		fV = fCMax;
 	}
+
+	if (fH < 0) {
+		fH = 360 + fH;
+	}
+}
+
+void HSVtoRGB(float& fR, float& fG, float& fB, float& fH, float& fS, float& fV) {
+	float fC = fV * fS; // Chroma
+	float fHPrime = fmod(fH / 60.0, 6);
+	float fX = fC * (1 - fabs(fmod(fHPrime, 2) - 1));
+	float fM = fV - fC;
+
+	if (0 <= fHPrime && fHPrime < 1) {
+		fR = fC;
+		fG = fX;
+		fB = 0;
+	}
+	else if (1 <= fHPrime && fHPrime < 2) {
+		fR = fX;
+		fG = fC;
+		fB = 0;
+	}
+	else if (2 <= fHPrime && fHPrime < 3) {
+		fR = 0;
+		fG = fC;
+		fB = fX;
+	}
+	else if (3 <= fHPrime && fHPrime < 4) {
+		fR = 0;
+		fG = fX;
+		fB = fC;
+	}
+	else if (4 <= fHPrime && fHPrime < 5) {
+		fR = fX;
+		fG = 0;
+		fB = fC;
+	}
+	else if (5 <= fHPrime && fHPrime < 6) {
+		fR = fC;
+		fG = 0;
+		fB = fX;
+	}
+	else {
+		fR = 0;
+		fG = 0;
+		fB = 0;
+	}
+
+	fR += fM;
+	fG += fM;
+	fB += fM;
 }

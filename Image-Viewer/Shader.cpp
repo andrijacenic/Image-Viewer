@@ -97,9 +97,7 @@ void Shader::drawImageWithModification(int texID, Image* image)
 	glBindTexture(GL_TEXTURE_2D, texID);
 	glUniform1i(textureLocation, 0);
 
-	U1f("contrast", image->mod.contrast);
-	U1f("saturation", image->mod.saturation);
-	U1f("hue", (image->mod.hue) / 360.0);
+	U3f("hsv", (image->mod.hue) / 360.0, image->mod.saturation, (image->mod.brightness));
 
 	glDrawArrays(GL_QUADS, 0, 4);
 
