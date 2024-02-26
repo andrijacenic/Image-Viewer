@@ -2,22 +2,23 @@
 Is a OpenGL application for viewing and editing images.
 The aplication uses OpenGL and Dear ImGui to render images to the screen.
 
-###### Normal viewing
+#### Normal viewing
 
 ![Normal viewing](Images/img1.png)
 
-###### Rotated+zoomed viewing
+#### Rotated+zoomed viewing
 You can rotate and view the image with that rotation
 **Ctrl + scroll = rotation**
 **Scroll = zoom**
 
 ![Normal viewing](Images/img3.png)
-##### Fullscreen viewing
+
+#### Fullscreen viewing
 To return to windowed mode press the **esc** key
 
 ![Normal viewing](Images/img4.png)
 
-##### The edit menu
+#### The edit menu
 ![Normal viewing](Images/img2.png)
 
 #### Editing the image
