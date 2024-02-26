@@ -36,7 +36,7 @@ To return to windowed mode press the **esc** key
 - **R** - reset the view transformations
 - **<- ->** - change the selected image
 - **Click on the image strip image** - changes the selected image to that image
-
+- **Esc** - change to windowed mode
 ### Libraries
 
 Libraries used are : GLFW, Dear ImGui (OpenGL with GLFW), GLAD and stb(stb_image, stb_image_write)
