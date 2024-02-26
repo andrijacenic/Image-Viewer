@@ -253,37 +253,15 @@ void App::update()
 		if (ImGui::MenuItem(isFullScreen ? "> <" : "[ ]")) {
 			toggleFullScreen();
 		}
-
-		ImGui::Text(ImageManagment::getInstance()->getCurrentImage()->imagePath.c_str());
-		std::string text = " width : ";
-		text += std::to_string(ImageManagment::getInstance()->getCurrentImage()->w);
-		text += " height : ";
-		text += std::to_string(ImageManagment::getInstance()->getCurrentImage()->h);
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(text.c_str()).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
-		ImGui::Text(text.c_str());
-
-		//ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.8f, 0.0f, 1.0f));
-		//ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.55f, 0.8f, 0.55f, 1.0f));
-		//ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.8f, 0.4f, 1.0f));
-		//if (ImGui::Button("_")) {
-		//	ShowWindow(glfwGetWin32Window(window), SW_MINIMIZE);
-		//}
-		//ImGui::PopStyleColor(3);
-
-		//ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.8f, 1.0f));
-		//ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.55f, 0.55f, 0.8f, 1.0f));
-		//ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.55f, 0.4f, 0.8f, 1.0f));
-		//if (ImGui::Button("[]")) {
-		//	toggleFullScreen();
-		//}
-		//ImGui::PopStyleColor(3);
-		//ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.0f, 0.0f, 1.0f));
-		//ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.55f, 0.55f, 1.0f));
-		//ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
-		//if (ImGui::Button("X")) {
-		//	glfwSetWindowShouldClose(window, true);
-		//}
-		//ImGui::PopStyleColor(3);
+		if (ImageManagment::getInstance()->getCurrentImage() != nullptr) {
+			ImGui::Text(ImageManagment::getInstance()->getCurrentImage()->imagePath.c_str());
+			std::string text = " width : ";
+			text += std::to_string(ImageManagment::getInstance()->getCurrentImage()->w);
+			text += " height : ";
+			text += std::to_string(ImageManagment::getInstance()->getCurrentImage()->h);
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(text.c_str()).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
+			ImGui::Text(text.c_str());
+		}
 		ImGui::EndMainMenuBar();
 	}
 
@@ -313,7 +291,7 @@ void App::drawImage()
 	h = h * 5 / 6;
 	viewWidth = w;
 	viewHeight = h;
-	if (currImage->texId == -1) {
+	if (currImage == nullptr || currImage->texId == -1) {
 		draw->AddRectFilled({ 0, 0 }, { (float)w , (float) h }, IM_COL32(10, 10, 10, 255));
 		return;
 	}
@@ -392,7 +370,12 @@ void App::drawImageStrip()
 		if (i == n) {
 			i = selected;
 		}
-		Image img = *ImageManagment::getInstance()->getImageAt(i);
+		Image* img_ptr = ImageManagment::getInstance()->getImageAt(i);
+		if (img_ptr == nullptr) {
+			i = n+1;
+			continue;
+		}
+		Image img = *img_ptr;
 		float ih = img.h, iw = img.w;
 		double scale = min((double)h / (double)ih, (double)w / (double)iw);
 		iw = scale * img.w;
