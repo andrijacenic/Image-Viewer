@@ -29,7 +29,7 @@ void Shader::loadShader(char* vertexSource, char* fragmentSource)
 
 	glGetShaderiv(fragShaderID, GL_COMPILE_STATUS, &success);
 	if (!success) {
-		glGetShaderInfoLog(vertShaderID, 512, nullptr, infoLog);
+		glGetShaderInfoLog(fragShaderID, 512, nullptr, infoLog);
 		std::cerr << "Failed to compile vertex shader: " << infoLog << std::endl;
 	}
 

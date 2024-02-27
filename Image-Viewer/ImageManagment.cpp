@@ -86,7 +86,7 @@ void ImageManagment::loadImage(Image* image) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, num_channels == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, (void*)image_data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, num_channels == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, (void*)image_data);
 	glfwMakeContextCurrent(nullptr);
 	App::windowMutex.unlock();
 

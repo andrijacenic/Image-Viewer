@@ -82,9 +82,12 @@ private:
 	}
 	void main()
 	{
-		vec3 color = texture2D(sampler, outUv).rgb;
-		color = changeHsv(color, hsv);
-		gl_FragColor = vec4(color, 1.0);
+		vec4 color = texture2D(sampler, outUv).rgba;
+		float a = color.a;
+		bool gX = int(outUv.x * 50.0) % 2 == 0;
+		bool gY = int(outUv.y * 50.0) % 2 == 1;
+		float c = gX != gY ? 0.65 : 0.9;
+		gl_FragColor = vec4(vec3(c, c, c) * (1.0 - a) + changeHsv(color.rgb, hsv) * a, 1.0);
 	}
 	)END";
 };
