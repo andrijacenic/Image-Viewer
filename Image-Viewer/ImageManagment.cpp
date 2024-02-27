@@ -8,7 +8,7 @@ std::mutex ImageManagment::shouldOpenImageMutex;
 
 ImageManagment* ImageManagment::instance = nullptr;
 std::vector<std::string> ImageManagment::imageExtensions = {
-	".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".webp"
+	".jpg", ".jpeg", ".png", ".bmp"
 };
 ImageManagment::ImageManagment() {
 	images.reserve(10);

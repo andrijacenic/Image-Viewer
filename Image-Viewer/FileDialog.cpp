@@ -6,9 +6,16 @@ bool FileDialog::openFile(){
     HRESULT f_SysHr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     if (FAILED(f_SysHr))
         return FALSE;
+    COMDLG_FILTERSPEC ComDlgFS[5] = { 
+        {L"All Image types", L"*.png;*.jpg;*.jpeg;*.bmp;"},
+        {L"Joint Photographic Experts Groups", L"*.jpg;*.jpeg"},
+        {L"Portable Network Graphic", L"*.png"},
+        {L"Bitmap", L"*.bmp"}
+    };
 
     IFileOpenDialog* f_FileSystem;
     f_SysHr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, reinterpret_cast<void**>(&f_FileSystem));
+    f_FileSystem->SetFileTypes(4, ComDlgFS);
     if (FAILED(f_SysHr)) {
         CoUninitialize();
         return FALSE;

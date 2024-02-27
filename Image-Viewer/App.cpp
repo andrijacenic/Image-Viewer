@@ -170,7 +170,7 @@ void App::update()
 			if (ImGui::BeginMenu("Save"))
 			{
 				if (ImGui::MenuItem("Save as PNG")) {
-					if (FileDialog::saveFile(L".png")) {
+					if (FileDialog::saveFile(L"*.png")) {
 						currentFile = FileDialog::sFilePath;
 						if (!currentFile.ends_with(".png")) {
 							currentFile += ".png";
@@ -181,7 +181,7 @@ void App::update()
 				if (ImGui::MenuItem("Save as BMP")) {
 					if (FileDialog::saveFile(L".bmp")) {
 						currentFile = FileDialog::sFilePath;
-						if (!currentFile.ends_with(".bmp")) {
+						if (!currentFile.ends_with("*.bmp")) {
 							currentFile += ".bmp";
 						}
 						saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, BMP);
@@ -190,7 +190,7 @@ void App::update()
 				if (ImGui::BeginMenu("Save as JPG")) {
 					ImGui::SliderInt("Quality", &quality, 1, 100);
 					if (ImGui::Button("Save")) {
-						if (FileDialog::saveFile(L".jpg")) {
+						if (FileDialog::saveFile(L"*.jpg")) {
 							currentFile = FileDialog::sFilePath;
 							if (!currentFile.ends_with(".jpg")) {
 								currentFile += ".jpg";
