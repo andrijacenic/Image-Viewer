@@ -80,21 +80,16 @@ void ImageManagment::loadImage(Image* image) {
 	glGenTextures(1, (&texture));
 	glBindTexture(GL_TEXTURE_2D, texture);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	// Set texture wrapping and filtering options
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-	// Load image data into the texture
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)image_data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, num_channels == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, (void*)image_data);
 	glfwMakeContextCurrent(nullptr);
 	App::windowMutex.unlock();
-	// Free the image data after loading it into the texture
+
 	stbi_image_free(image_data);
 
 	image->texId = texture;
@@ -291,48 +286,48 @@ void saveImage(Image image, std::string newFilePath, int type, int quality)
 	int width, height, num_channels;
 	unsigned char* data = stbi_load(image.imagePath.c_str(), &width, &height, &num_channels, 0);
 	if (image.flipX) {
-		flipDataX(width, height, data);
+		flipDataX(width, height, data, num_channels);
 	}
 	if (image.flipY) {
-		flipDataY(width, height, data);
+		flipDataY(width, height, data, num_channels);
 	}
 	int p = 0;
 	image.rotation = (image.rotation + 4) % 4;
 	switch (image.rotation)
 	{
 	case 1:
-		rotateData90(width, height, data);
+		rotateData90(width, height, data, num_channels);
 		p = width;
 		width = height;
 		height = p;
 		break;
 	case 2:
-		flipDataX(width, height, data);
-		flipDataY(width, height, data);
+		flipDataX(width, height, data, num_channels);
+		flipDataY(width, height, data, num_channels);
 		break;
 	case 3:
-		rotateData90(width, height, data);
+		rotateData90(width, height, data, num_channels);
 		p = width;
 		width = height;
 		height = p;
-		flipDataY(width, height, data);
+		flipDataY(width, height, data, num_channels);
 		break;
 	default:
 		break;
 	}
 	if (image.mod.saturation != 1.0 || image.mod.brightness != 1.0 || image.mod.hue != 0.0) {
-		hsvEdit(width, height, data, image.mod.hue, image.mod.saturation, image.mod.brightness);
+		hsvEdit(width, height, data, image.mod.hue, image.mod.saturation, image.mod.brightness, num_channels);
 	}
 	switch (type)
 	{
 	case PNG:
-		stbi_write_png(newFilePath.c_str(), width, height, 3, data, width*3);
+		stbi_write_png(newFilePath.c_str(), width, height, num_channels, data, width* num_channels);
 		break;
 	case JPG:
-		stbi_write_jpg(newFilePath.c_str(), width, height, 3, data, quality);
+		stbi_write_jpg(newFilePath.c_str(), width, height, num_channels, data, quality);
 		break;
 	case BMP:
-		stbi_write_bmp(newFilePath.c_str(), width, height, 3, data);
+		stbi_write_bmp(newFilePath.c_str(), width, height, num_channels, data);
 		break;
 	default:
 		break;
@@ -341,70 +336,64 @@ void saveImage(Image image, std::string newFilePath, int type, int quality)
 	stbi_image_free(data);
 }
 
-void flipDataX(int width, int height, unsigned char* data)
+void flipDataX(int width, int height, unsigned char* data, int channels)
 {
-	for (int y = 0; y < height; ++y) {
-		for (int i = 0; i < width / 2; ++i) {
-			std::swap(data[y * width * 3 + i * 3], data[y * width * 3 + (width - i - 1) * 3]);
-			std::swap(data[y * width * 3 + i * 3 + 1], data[y * width * 3 + (width - i - 1) * 3 + 1]);
-			std::swap(data[y * width * 3 + i * 3 + 2], data[y * width * 3 + (width - i - 1) * 3 + 2]);
+	for (int y = 0; y < height; y++) {
+		for (int i = 0; i < width / 2; i++) {
+			for(int c = 0; c < channels; c++)
+				std::swap(data[y * width * channels + i * channels + c], data[y * width * channels + (width - i - 1) * channels + c]);
 		}
 	}
 }
 
-void flipDataY(int width, int height, unsigned char* data)
+void flipDataY(int width, int height, unsigned char* data, int channels)
 {
-	for (int y = 0; y < height / 2; ++y) {
-		for (int x = 0; x < width; ++x) {
-			std::swap(data[(y * width + x) * 3], data[((height - y - 1) * width + x) * 3]);
-			std::swap(data[(y * width + x) * 3 + 1], data[((height - y - 1) * width + x) * 3 + 1]);
-			std::swap(data[(y * width + x) * 3 + 2], data[((height - y - 1) * width + x) * 3 + 2]);
+	for (int y = 0; y < height / 2; y++) {
+		for (int x = 0; x < width; x++) {
+			for(int i = 0; i < channels; i++)
+				std::swap(data[(y * width + x) * channels + i], data[((height - y - 1) * width + x) * channels + i]);
 		}
 	}
 }
 
-void rotateData90(int width, int height, unsigned char* data)
+void rotateData90(int width, int height, unsigned char* data, int channels)
 {
-	char* tmp = new char[width * height * 3];
+	char* tmp = new char[width * height * channels];
 	for (int y = 0; y < height; ++y) {
 		for (int x = 0; x < width; ++x) {
-			tmp[(x * height + (height - y - 1)) * 3] = data[y * width * 3 + x * 3];
-			tmp[(x * height + (height - y - 1)) * 3 + 1] = data[y * width * 3 + x * 3 + 1];
-			tmp[(x * height + (height - y - 1)) * 3 + 2] = data[y * width * 3 + x * 3 + 2];
+			for (int i = 0; i < channels; i++) {
+				tmp[(x * height + (height - y - 1)) * channels + i] = data[y * width * channels + x * channels + i];
+			}
 		}
 	}
 	for (int y = 0; y < height; ++y) {
 		for (int x = 0; x < width; ++x) {
-			data[(y * width + x) * 3] = tmp[(y * width + x) * 3];
-			data[(y * width + x) * 3 + 1] = tmp[(y * width + x) * 3 + 1];
-			data[(y * width + x) * 3 + 2] = tmp[(y * width + x) * 3 + 2];
+			for (int i = 0; i < channels; i++) {
+				data[(y * width + x) * channels + i] = tmp[(y * width + x) * channels + i];
+			}
 		}
 	}
 	delete[] tmp;
 }
 
-void contrast(int width, int height, unsigned char* data, float contrast)
+void contrast(int width, int height, unsigned char* data, float contrast, int channels)
 {
 	int p = 0;
 	for (int y = 0; y < height; ++y) {
 		for (int x = 0; x < width; ++x) {
-			p = (float)(data[(y * width + x) * 3]) * contrast;
-			data[(y * width + x) * 3] = p > 255 ? 255 : (unsigned char)p;
-
-			p = (float)(data[(y * width + x) * 3 + 1]) * contrast;
-			data[(y * width + x) * 3 + 1] = p > 255 ? 255 : (unsigned char)p;
-
-			p = (float)(data[(y * width + x) * 3 + 2]) * contrast;
-			data[(y * width + x) * 3 + 2] = p > 255 ? 255 : (unsigned char)p;
+			for (int i = 0; i < channels; i++) {
+				p = (float)(data[(y * width + x) * channels + i]) * contrast;
+				data[(y * width + x) * channels + i] = p > 255 ? 255 : (unsigned char)p;
+			}
 		}
 	}
 }
 
-void hsvEdit(int width, int height, unsigned char* data, float hue, float saturation, float value)
+void hsvEdit(int width, int height, unsigned char* data, float hue, float saturation, float value, int channels)
 {
 	for (int y = 0; y < height; ++y) {
 		for (int x = 0; x < width; ++x) {
-			unsigned char* pixel = data + y * width * 3 + x * 3;
+			unsigned char* pixel = data + y * width * channels + x * channels;
 
 			float r = ((float)pixel[0]) / 255.0f;
 			float g = ((float)pixel[1]) / 255.0f;
