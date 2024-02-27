@@ -210,7 +210,7 @@ void App::update()
 			ImGui::EndMenu();
 		}
 
-		if (ImGui::BeginMenu("Edit"))
+		if (ImageManagment::getInstance()->getCurrentImage() != nullptr && ImGui::BeginMenu("Edit"))
 		{
 			if (ImGui::MenuItem("Rotate Clockwise"))
 			{

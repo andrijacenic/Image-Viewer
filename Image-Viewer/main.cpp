@@ -2,9 +2,25 @@
 #include <windows.h>
 #include <shellapi.h>
 
+std::vector<std::string> split_string(const std::string& str, char delimiter) {
+	std::vector<std::string> tokens;
+	size_t start = 0;
+	while (start < str.size()) {
+		size_t pos = str.find(delimiter, start);
+		if (pos == std::string::npos) {
+			tokens.push_back(str.substr(start));
+			break;
+		}
+		tokens.push_back(str.substr(start, pos - start));
+		start = pos + 1;
+	}
+	return tokens;
+}
+
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
 
 	std::string path;
+	std::string exePath;
 	LPWSTR* szArglist;
 	int nArgs;
 	szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
@@ -21,6 +37,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 			std::string s(ws.begin(), ws.end());
 			args.push_back(s);
 		}
+		exePath = args[0];
 		if (nArgs >= 2) {
 			path = args[1];
 			for (int i = 2; i < nArgs; i++) {
@@ -34,7 +51,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	else {
 		path = std::string();
 	}
-	App* app = new App(path, "icon.png");
+	std::vector<std::string> exePathSplit = split_string(exePath, '\\');
+	if(!exePath.empty())
+		exePathSplit.pop_back();
+	std::string iconPath;
+	for (std::string s : exePathSplit)
+		iconPath += s + '\\';
+	iconPath += "icon.png";
+	App* app = new App(path, iconPath);
 	app->runApp();
 	delete app;
 	return 0;
