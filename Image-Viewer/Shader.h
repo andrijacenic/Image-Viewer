@@ -88,9 +88,7 @@ private:
 	{
 		vec4 color = texture2D(sampler, outUv).rgba;
 		float a = color.a;
-		bool gX = int((outPosition.x + 1.0) * 55.0) % 2 == 0;
-		bool gY = int((outPosition.y + 1.0) * 55.0) % 2 == 1;
-		float c = gX != gY ? 0.65 : 0.9;
+		float c = int((outPosition.x + 1.0) * 55.0) % 2 != int((outPosition.y + 1.0) * 55.0) % 2 ? 0.65 : 0.9;
 		gl_FragColor = vec4(vec3(c, c, c) * (1.0 - a) + changeHsv(color.rgb, hsv) * a, 1.0);
 	}
 	)END";
