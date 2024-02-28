@@ -9,6 +9,7 @@
 GLFWwindow* App::window = nullptr;
 std::mutex App::windowMutex;
 int App::hoverSel = 0;
+bool App::showStrip = true;
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 
 App::~App() {
@@ -147,122 +148,17 @@ int App::start()
 void App::update()
 {
 	drawImage();
-	drawImageStrip();
 	if (App::shouldToggleFullscreen) {
 		shouldToggleFullscreen = false;
 		if (isFullScreen) {
 			toggleFullScreen();
 		}
 	}
-	if (isFullScreen)
-		return;
-	if (ImGui::BeginMainMenuBar())
-	{
-		if (ImGui::BeginMenu("File"))
-		{
-			if (ImGui::MenuItem("Open"))
-			{
-				if (FileDialog::openFile()){
-					currentFile = FileDialog::sFilePath;
-					ImageManagment::getInstance()->setImagesPath(currentFile);
-				}
-			}
-			if (ImGui::BeginMenu("Save"))
-			{
-				if (ImGui::MenuItem("Save as PNG")) {
-					if (FileDialog::saveFile(L"*.png")) {
-						currentFile = FileDialog::sFilePath;
-						if (!currentFile.ends_with(".png")) {
-							currentFile += ".png";
-						}
-						saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, PNG);
-					}
-				}
-				if (ImGui::MenuItem("Save as BMP")) {
-					if (FileDialog::saveFile(L".bmp")) {
-						currentFile = FileDialog::sFilePath;
-						if (!currentFile.ends_with("*.bmp")) {
-							currentFile += ".bmp";
-						}
-						saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, BMP);
-					}
-				}
-				if (ImGui::BeginMenu("Save as JPG")) {
-					ImGui::SliderInt("Quality", &quality, 1, 100);
-					if (ImGui::Button("Save")) {
-						if (FileDialog::saveFile(L"*.jpg")) {
-							currentFile = FileDialog::sFilePath;
-							if (!currentFile.ends_with(".jpg")) {
-								currentFile += ".jpg";
-							}
-							saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, JPG, quality);
-						}
-					}
-					ImGui::EndMenu();
-				}
-
-				ImGui::EndMenu();
-			}
-			ImGui::Separator();
-			if (ImGui::MenuItem("Exit")) {
-				glfwSetWindowShouldClose(window, true);
-			}
-			ImGui::EndMenu();
-		}
-
-		if (ImageManagment::getInstance()->getCurrentImage() != nullptr && ImGui::BeginMenu("Edit"))
-		{
-			if (ImGui::MenuItem("Rotate Clockwise"))
-			{
-				ImageManagment::getInstance()->rotateCurrentImage(1);
-			}
-			if (ImGui::MenuItem("Rotate Counter Clockwise"))
-			{
-				ImageManagment::getInstance()->rotateCurrentImage(-1);
-			}
-			if (ImGui::MenuItem("Flip X")) {
-				ImageManagment::getInstance()->flipCurrentImageX();
-			}
-			if (ImGui::MenuItem("Flip Y")) {
-				ImageManagment::getInstance()->flipCurrentImageY();
-
-			}
-			ImGui::Separator();
-			if (ImGui::MenuItem("Rotate Clockwise by 15deg")) {
-				ImageManagment::getInstance()->changeAngle(15 * 3.14 / 180);
-			}
-			if (ImGui::MenuItem("Rotate Counter Clockwise by 15deg")) {
-				ImageManagment::getInstance()->changeAngle(-15 * 3.14 / 180);
-			}
-			ImGui::Separator();
-			ImGui::SliderFloat("Hue", &ImageManagment::getInstance()->getCurrentImage()->mod.hue, 0, 360.0f, "%.0f");
-			ImGui::SliderFloat("Saturation", &ImageManagment::getInstance()->getCurrentImage()->mod.saturation, 0.0f, 4.0f, "%.2f");
-			ImGui::SliderFloat("Brightness", &ImageManagment::getInstance()->getCurrentImage()->mod.brightness, 0, 2.0f,"%.2f");
-			if (ImGui::Button("Reset")) {
-				ImageManagment::getInstance()->resetAll();
-			}
-			ImGui::EndMenu();
-		}
-		if (ImGui::MenuItem("+")) {
-			ImageManagment::getInstance()->increaseZoom();
-		}
-		if (ImGui::MenuItem("-")) {
-			ImageManagment::getInstance()->decreaseZoom();
-		}
-
-		if (ImGui::MenuItem(isFullScreen ? "> <" : "[ ]")) {
-			toggleFullScreen();
-		}
-		if (ImageManagment::getInstance()->getCurrentImage() != nullptr) {
-			ImGui::Text(ImageManagment::getInstance()->getCurrentImage()->imagePath.c_str());
-			std::string text = " width : ";
-			text += std::to_string(ImageManagment::getInstance()->getCurrentImage()->w);
-			text += " height : ";
-			text += std::to_string(ImageManagment::getInstance()->getCurrentImage()->h);
-			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(text.c_str()).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
-			ImGui::Text(text.c_str());
-		}
-		ImGui::EndMainMenuBar();
+	if (showStrip && !isFullScreen) {
+		drawImageStrip();
+	}
+	if(!isFullScreen){
+		drawMenu();
 	}
 
 }
@@ -288,7 +184,8 @@ void App::drawImage()
 	int w, h;
 	glfwGetFramebufferSize(window, &w, &h);
 	float rw = w, rh = h;
-	h = h * 5 / 6;
+	if(!isFullScreen && showStrip)
+		h = h * 5 / 6;
 	viewWidth = w;
 	viewHeight = h;
 	if (currImage == nullptr || currImage->texId == -1) {
@@ -436,6 +333,123 @@ void App::drawImageStrip()
 
 	}
 }
+void App::drawMenu()
+{
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("File"))
+		{
+			if (ImGui::MenuItem("Open"))
+			{
+				if (FileDialog::openFile()) {
+					currentFile = FileDialog::sFilePath;
+					ImageManagment::getInstance()->setImagesPath(currentFile);
+				}
+			}
+			if (ImageManagment::getInstance()->getCurrentImage() != nullptr && ImGui::BeginMenu("Save"))
+			{
+				if (ImGui::MenuItem("Save as PNG")) {
+					if (FileDialog::saveFile(L"*.png")) {
+						currentFile = FileDialog::sFilePath;
+						if (!currentFile.ends_with(".png")) {
+							currentFile += ".png";
+						}
+						saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, PNG);
+					}
+				}
+				if (ImGui::MenuItem("Save as BMP")) {
+					if (FileDialog::saveFile(L".bmp")) {
+						currentFile = FileDialog::sFilePath;
+						if (!currentFile.ends_with("*.bmp")) {
+							currentFile += ".bmp";
+						}
+						saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, BMP);
+					}
+				}
+				if (ImGui::BeginMenu("Save as JPG")) {
+					ImGui::SliderInt("Quality", &quality, 1, 100);
+					if (ImGui::Button("Save")) {
+						if (FileDialog::saveFile(L"*.jpg")) {
+							currentFile = FileDialog::sFilePath;
+							if (!currentFile.ends_with(".jpg")) {
+								currentFile += ".jpg";
+							}
+							saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, JPG, quality);
+						}
+					}
+					ImGui::EndMenu();
+				}
+
+				ImGui::EndMenu();
+			}
+			ImGui::Separator();
+			if (ImGui::MenuItem("Exit")) {
+				glfwSetWindowShouldClose(window, true);
+			}
+			ImGui::EndMenu();
+		}
+
+		if (ImageManagment::getInstance()->getCurrentImage() != nullptr && ImGui::BeginMenu("Edit"))
+		{
+			if (ImGui::MenuItem("Rotate Clockwise"))
+			{
+				ImageManagment::getInstance()->rotateCurrentImage(1);
+			}
+			if (ImGui::MenuItem("Rotate Counter Clockwise"))
+			{
+				ImageManagment::getInstance()->rotateCurrentImage(-1);
+			}
+			if (ImGui::MenuItem("Flip X")) {
+				ImageManagment::getInstance()->flipCurrentImageX();
+			}
+			if (ImGui::MenuItem("Flip Y")) {
+				ImageManagment::getInstance()->flipCurrentImageY();
+
+			}
+			ImGui::Separator();
+			if (ImGui::MenuItem("Rotate Clockwise by 15deg")) {
+				ImageManagment::getInstance()->changeAngle(15 * 3.14 / 180);
+			}
+			if (ImGui::MenuItem("Rotate Counter Clockwise by 15deg")) {
+				ImageManagment::getInstance()->changeAngle(-15 * 3.14 / 180);
+			}
+			ImGui::Separator();
+			ImGui::SliderFloat("Hue", &ImageManagment::getInstance()->getCurrentImage()->mod.hue, 0, 360.0f, "%.0f");
+			ImGui::SliderFloat("Saturation", &ImageManagment::getInstance()->getCurrentImage()->mod.saturation, 0.0f, 4.0f, "%.2f");
+			ImGui::SliderFloat("Brightness", &ImageManagment::getInstance()->getCurrentImage()->mod.brightness, 0, 2.0f, "%.2f");
+			if (ImGui::Button("Reset")) {
+				ImageManagment::getInstance()->resetAll();
+			}
+			ImGui::EndMenu();
+		}
+		
+		if (ImGui::BeginMenu("Options")) {
+			ImGui::Checkbox("Show image strip", &App::showStrip);
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::MenuItem("+")) {
+			ImageManagment::getInstance()->increaseZoom();
+		}
+		if (ImGui::MenuItem("-")) {
+			ImageManagment::getInstance()->decreaseZoom();
+		}
+
+		if (ImGui::MenuItem(isFullScreen ? "> <" : "[ ]")) {
+			toggleFullScreen();
+		}
+		if (ImageManagment::getInstance()->getCurrentImage() != nullptr) {
+			ImGui::Text(ImageManagment::getInstance()->getCurrentImage()->imagePath.c_str());
+			std::string text = " width : ";
+			text += std::to_string(ImageManagment::getInstance()->getCurrentImage()->w);
+			text += " height : ";
+			text += std::to_string(ImageManagment::getInstance()->getCurrentImage()->h);
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(text.c_str()).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
+			ImGui::Text(text.c_str());
+		}
+		ImGui::EndMainMenuBar();
+	}
+}
 void App::generateBufffer()
 {
 	glGenBuffers(1, &buffer);
@@ -472,6 +486,9 @@ void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods)
 	}
 	if (key == GLFW_KEY_D && action == GLFW_PRESS) {
 		x -= 0.010;
+	}
+	if (key == GLFW_KEY_I && action == GLFW_PRESS) {
+		App::showStrip = !App::showStrip;
 	}
 	ImageManagment::getInstance()->addTranslation(x, y);
 

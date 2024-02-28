@@ -20,6 +20,7 @@ public:
 	static bool rightClickDown;
 	static bool ctrlDown;
 	static bool holdingWindow;
+	static bool showStrip;
 	static ImVec2 mousePosition;
 	static int hoverSel;
 	static bool shouldToggleFullscreen;
@@ -38,6 +39,7 @@ public:
 
 	void drawImage();
 	void drawImageStrip();
+	void drawMenu();
 
 	void toggleFullScreen();
 	void generateBufffer();
