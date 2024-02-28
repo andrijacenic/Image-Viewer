@@ -346,7 +346,7 @@ void App::drawMenu()
 					ImageManagment::getInstance()->setImagesPath(currentFile);
 				}
 			}
-			if (ImageManagment::getInstance()->getCurrentImage() != nullptr && ImGui::BeginMenu("Save"))
+			if (ImGui::BeginMenu("Save", ImageManagment::getInstance()->getCurrentImage() != nullptr))
 			{
 				if (ImGui::MenuItem("Save as PNG")) {
 					if (FileDialog::saveFile(L"*.png")) {
@@ -389,7 +389,7 @@ void App::drawMenu()
 			ImGui::EndMenu();
 		}
 
-		if (ImageManagment::getInstance()->getCurrentImage() != nullptr && ImGui::BeginMenu("Edit"))
+		if (ImGui::BeginMenu("Edit", ImageManagment::getInstance()->getCurrentImage() != nullptr))
 		{
 			if (ImGui::MenuItem("Rotate Clockwise"))
 			{
@@ -427,7 +427,17 @@ void App::drawMenu()
 			ImGui::Checkbox("Show image strip", &App::showStrip);
 			ImGui::EndMenu();
 		}
-
+		if (ImGui::BeginMenu("Help")) {
+			ImGui::Text("W A S D (click and drag) - Move the viewport");
+			ImGui::Text("Q E - Rotate the image");
+			ImGui::Text("<-- --> (click on the image in the strip) - Change the selected image");
+			ImGui::Text("Scroll - Zoom");
+			ImGui::Text("Ctrl + scroll - Rotate the viewport");
+			ImGui::Text("I - toggle show image strip");
+			ImGui::Text("R - Reset the viewport transforms");
+			ImGui::Text("Esc - Exit fullscreen");
+			ImGui::EndMenu();
+		}
 		if (ImGui::MenuItem("+")) {
 			ImageManagment::getInstance()->increaseZoom();
 		}

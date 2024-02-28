@@ -41,9 +41,11 @@ private:
 
 	varying vec2 outUv;
 	varying vec4 outColor;
+	varying vec3 outPosition;
 	void main(){
 		outUv = inUv;
 		outColor = inColor;
+		outPosition = inPosition;
 		gl_Position = vec4(inPosition, 1.0);
 	}
 	)END";
@@ -52,6 +54,8 @@ private:
 	#version 330
 	varying vec2 outUv;
 	varying vec4 outColor;
+	varying vec3 outPosition;
+
 	uniform sampler2D sampler;
 	uniform vec3 hsv;
 
@@ -84,8 +88,8 @@ private:
 	{
 		vec4 color = texture2D(sampler, outUv).rgba;
 		float a = color.a;
-		bool gX = int(outUv.x * 50.0) % 2 == 0;
-		bool gY = int(outUv.y * 50.0) % 2 == 1;
+		bool gX = int((outPosition.x + 1.0) * 55.0) % 2 == 0;
+		bool gY = int((outPosition.y + 1.0) * 55.0) % 2 == 1;
 		float c = gX != gY ? 0.65 : 0.9;
 		gl_FragColor = vec4(vec3(c, c, c) * (1.0 - a) + changeHsv(color.rgb, hsv) * a, 1.0);
 	}
