@@ -8,6 +8,8 @@
 #include <imgui.h>
 #include <functional>
 #include "ImageShaderModification.h"
+#include <iostream>
+#include<fstream>
 namespace fs = std::filesystem;
 #define NUMBER_OF_LOADED_IMAGES 6
 struct Image {
@@ -127,10 +129,14 @@ public:
 	void setImagesPath(std::string imagePath);
 };
 enum SaveType {
-	PNG = 0, JPG, BMP
+	PNG = 0, JPG, BMP, BIN
 };
+
 // Can be called in a thread
 void saveImage(Image image, std::string newFilePath = std::string(), int type = PNG, int quality = 80);
+
+void write_bin(const char* path, int width, int height, int channels, unsigned char* data);
+unsigned char* load_bin(const char* path, int* width, int* height, int* channels);
 
 void flipDataX(int width, int height, unsigned char* data, int channels = 3);
 void flipDataY(int width, int height, unsigned char* data, int channels = 3);

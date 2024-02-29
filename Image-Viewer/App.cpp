@@ -358,9 +358,9 @@ void App::drawMenu()
 					}
 				}
 				if (ImGui::MenuItem("Save as BMP")) {
-					if (FileDialog::saveFile(L".bmp")) {
+					if (FileDialog::saveFile(L"*.bmp")) {
 						currentFile = FileDialog::sFilePath;
-						if (!currentFile.ends_with("*.bmp")) {
+						if (!currentFile.ends_with(".bmp")) {
 							currentFile += ".bmp";
 						}
 						saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, BMP);
@@ -378,6 +378,15 @@ void App::drawMenu()
 						}
 					}
 					ImGui::EndMenu();
+				}
+				if (ImGui::MenuItem("Save as BIN")) {
+					if (FileDialog::saveFile(L"*.bin")) {
+						currentFile = FileDialog::sFilePath;
+						if (!currentFile.ends_with(".bin")) {
+							currentFile += ".bin";
+						}
+						saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, BIN);
+					}
 				}
 
 				ImGui::EndMenu();

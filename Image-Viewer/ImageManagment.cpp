@@ -8,7 +8,7 @@ std::mutex ImageManagment::shouldOpenImageMutex;
 
 ImageManagment* ImageManagment::instance = nullptr;
 std::vector<std::string> ImageManagment::imageExtensions = {
-	".jpg", ".jpeg", ".png", ".bmp"
+	".jpg", ".jpeg", ".png", ".bmp", ".bin"
 };
 ImageManagment::ImageManagment() {
 	images.reserve(10);
@@ -67,9 +67,16 @@ int ImageManagment::loadImages(std::string imagePath)
 void ImageManagment::loadImage(Image* image) {
 	if (image->texId != -1)
 		return;
-
+	
 	int width, height, num_channels;
-	stbi_uc* image_data = stbi_load(image->imagePath.c_str(), &width, &height, &num_channels, 0);
+	unsigned char* image_data = nullptr;
+	bool isBin = image->imagePath.ends_with(".bin");
+	if (!isBin) {
+		image_data = stbi_load(image->imagePath.c_str(), &width, &height, &num_channels, 0);
+	}
+	else {
+		image_data = load_bin(image->imagePath.c_str(), &width, &height, &num_channels);
+	}
 
 	if (!image_data) {
 		return;
@@ -89,8 +96,12 @@ void ImageManagment::loadImage(Image* image) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, num_channels == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, (void*)image_data);
 	glfwMakeContextCurrent(nullptr);
 	App::windowMutex.unlock();
-
-	stbi_image_free(image_data);
+	if (!isBin) {
+		stbi_image_free(image_data);
+	}
+	else {
+		delete[] image_data;
+	}
 
 	image->texId = texture;
 	image->w = width;
@@ -329,11 +340,58 @@ void saveImage(Image image, std::string newFilePath, int type, int quality)
 	case BMP:
 		stbi_write_bmp(newFilePath.c_str(), width, height, num_channels, data);
 		break;
+	case BIN:
+		write_bin(newFilePath.c_str(), width, height, num_channels, data);
+		break;
 	default:
 		break;
 	}
 
 	stbi_image_free(data);
+}
+
+void write_bin(const char* path, int width, int height, int channels, unsigned char* data)
+{
+	//	resolution x(4 bajta) - rezolucija slike x(recimo 1920)
+	//	resolution y(4 bajta) - rezolucija slike y(recimo 1080)
+	//	type(4 bajta) - tip(0 inicijalno)
+	//	rgb(4 bajta) - 0 za 24 bita, 1 za 32 bita rgb
+	//	xor (4 bajta) - tip kodiranja - sifriranja piksela(ako je 0 nema kodiranja)
+	//	len(4 bajta) - ukupna duzina fajla(ukljucujuci i ovaj header duzine 24 bajta)
+	std::ofstream writer(path, std::ios::out | std::ios::binary);
+	if (!writer.is_open()) {
+		return; // TODO
+	}
+	unsigned int p = 0;
+	writer.write(reinterpret_cast<char*>(&width), sizeof(width));
+	writer.write(reinterpret_cast<char*>(&height), sizeof(height));
+	writer.write(reinterpret_cast<char*>(&p), sizeof(p));
+	writer.write(reinterpret_cast<char*>(&channels), sizeof(channels));
+	writer.write(reinterpret_cast<char*>(&p), sizeof(p));
+	p = 24 + width * height * channels;
+	writer.write(reinterpret_cast<char*>(&p), sizeof(p));
+	writer.write((char*)data, width*height*channels);
+	writer.close();
+}
+
+unsigned char* load_bin(const char* path, int* width, int* height, int* channels)
+{
+	std::ifstream reader(path, std::ios::binary | std::ios::in);
+	if (!reader.is_open()) {
+		return nullptr; //TODO
+	}
+	int p = 0;
+	reader.read(reinterpret_cast<char*>(width), 4);
+	reader.read(reinterpret_cast<char*>(height), 4);
+	reader.read(reinterpret_cast<char*>(&p), 4);
+	reader.read(reinterpret_cast<char*>(channels), 4);
+	reader.read(reinterpret_cast<char*>(&p), 4);
+	int len = 0;
+	reader.read(reinterpret_cast<char*>(&len), 4);
+	unsigned char* data = new unsigned char[len - 24];
+	reader.read((char*)data, len - 24);
+	reader.close();
+	return data;
 }
 
 void flipDataX(int width, int height, unsigned char* data, int channels)
