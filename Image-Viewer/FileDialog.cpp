@@ -9,8 +9,7 @@ bool FileDialog::openFile(){
     COMDLG_FILTERSPEC ComDlgFS[5] = { 
         {L"All Image types", L"*.png;*.jpg;*.jpeg;*.bmp;*bin"},
         {L"Joint Photographic Experts Groups", L"*.jpg;*.jpeg"},
-        {L"Portable Network Graphic", L"*.png"},
-        {L"Bitmap", L"*.bmp"},
+        {L"Portable Network Graphic", L"*.png"},        {L"Bitmap", L"*.bmp"},
         {L"Uncompressed binary", L"*.bin"}
     };
 

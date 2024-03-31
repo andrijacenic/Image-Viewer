@@ -1,6 +1,7 @@
 #include "App.h"
 #include <windows.h>
 #include <shellapi.h>
+#include <iostream>
 
 std::vector<std::string> split_string(const std::string& str, char delimiter) {
 	std::vector<std::string> tokens;
@@ -15,6 +16,13 @@ std::vector<std::string> split_string(const std::string& str, char delimiter) {
 		start = pos + 1;
 	}
 	return tokens;
+}
+
+void writeException(const char* message) {
+	std::ofstream f("error.txt");
+	std::string s(message);
+	f.write(s.c_str(), s.length());
+	f.close();
 }
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
@@ -59,7 +67,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		iconPath += s + '\\';
 	iconPath += "icon.png";
 	App* app = new App(path, iconPath);
-	app->runApp();
+	try {
+		app->runApp();
+	}
+	catch (std::exception e) {
+		writeException(e.what());
+	}
 	delete app;
 	return 0;
 

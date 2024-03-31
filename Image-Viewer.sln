@@ -5,6 +5,8 @@ VisualStudioVersion = 17.5.33516.290
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Image-Viewer", "Image-Viewer\Image-Viewer.vcxproj", "{7783C32F-0F11-4094-B3BD-21D5BFE76001}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup", "Setup\Setup.vdproj", "{A563DF54-3740-4B6B-9DDF-5B7EB92FB093}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug - load photo|x64 = Debug - load photo|x64
@@ -33,6 +35,14 @@ Global
 		{7783C32F-0F11-4094-B3BD-21D5BFE76001}.Release|x64.Build.0 = Release|x64
 		{7783C32F-0F11-4094-B3BD-21D5BFE76001}.Release|x86.ActiveCfg = Release|Win32
 		{7783C32F-0F11-4094-B3BD-21D5BFE76001}.Release|x86.Build.0 = Release|Win32
+		{A563DF54-3740-4B6B-9DDF-5B7EB92FB093}.Debug - load photo|x64.ActiveCfg = Debug
+		{A563DF54-3740-4B6B-9DDF-5B7EB92FB093}.Debug - load photo|x86.ActiveCfg = Debug
+		{A563DF54-3740-4B6B-9DDF-5B7EB92FB093}.Debug|x64.ActiveCfg = Debug
+		{A563DF54-3740-4B6B-9DDF-5B7EB92FB093}.Debug|x86.ActiveCfg = Debug
+		{A563DF54-3740-4B6B-9DDF-5B7EB92FB093}.Release - load photo|x64.ActiveCfg = Release
+		{A563DF54-3740-4B6B-9DDF-5B7EB92FB093}.Release - load photo|x86.ActiveCfg = Release
+		{A563DF54-3740-4B6B-9DDF-5B7EB92FB093}.Release|x64.ActiveCfg = Release
+		{A563DF54-3740-4B6B-9DDF-5B7EB92FB093}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
