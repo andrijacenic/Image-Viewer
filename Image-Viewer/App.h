@@ -43,6 +43,9 @@ public:
 
 	void toggleFullScreen();
 	void generateBufffer();
+
+	void changeStyleWhite();
+	void changeStyleDark();
 private:
 	Shader* shader;
 	Image* currImage;
@@ -54,6 +57,7 @@ private:
 	int windowWidth = 0, windowHeight = 0, posX = 0, posY = 0;
 	float imageX = 0, imageY = 0, imageWidth = 0, imageHeight = 0, viewWidth = 0, viewHeight = 0;
 	bool isFullScreen = false;
+	bool isLight = false;
 };
 void mouseClick(GLFWwindow* window, int button, int action, int mods);
 void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods);

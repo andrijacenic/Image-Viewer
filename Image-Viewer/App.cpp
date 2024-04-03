@@ -48,6 +48,11 @@ void App::runApp()
 
 	glEnable(GL_TEXTURE_2D);
 
+	if (isLight)
+		glClearColor(0.9, 0.9, 0.9, 1);
+	else
+		glClearColor(0.1, 0.1, 0.1, 1);
+
 	while (!glfwWindowShouldClose(window)) {
 		double now = glfwGetTime();
 		double deltaTime = now - lastUpdateTime;
@@ -63,7 +68,7 @@ void App::runApp()
 		
 			ImGui::NewFrame();
 
-			glClearColor(0.1, 0.1, 0.1, 1);
+
 			glClear(GL_COLOR_BUFFER_BIT);
 
 			update();
@@ -189,7 +194,7 @@ void App::drawImage()
 	viewWidth = w;
 	viewHeight = h;
 	if (currImage == nullptr || currImage->texId == -1) {
-		draw->AddRectFilled({ 0, 0 }, { (float)w , (float) h }, IM_COL32(10, 10, 10, 255));
+		draw->AddRectFilled({ 0, 0 }, { (float)w , (float) h }, isLight ? IM_COL32(230, 230, 230, 255) : IM_COL32(10, 10, 10, 255));
 		return;
 	}
 	float zoom = ImageManagment::getInstance()->getZoom();
@@ -255,7 +260,7 @@ void App::drawImageStrip()
 	w = h * 2 / 3;
 	x = vw/2-selected * (w+ STRIP_DISTANCE) - w/2;
 
-	draw->AddRectFilled({ (float)0, (float)y }, { (float)vw, (float)y + h }, IM_COL32(10, 10, 10, 200));
+	draw->AddRectFilled({ (float)0, (float)y }, { (float)vw, (float)y + h }, isLight ? IM_COL32(230, 230, 230, 200) : IM_COL32(10, 10, 10, 200));
 
 	int n = ImageManagment::getInstance()->getNumberOfImages();
 	int i = 0;
@@ -278,7 +283,7 @@ void App::drawImageStrip()
 		iw = scale * img.w;
 		ih = scale * img.h;
 		if (img.texId == -1) {
-			draw->AddRectFilled({ (float)x + (w + STRIP_DISTANCE) * i, (float)y }, { (float)x + (w + STRIP_DISTANCE) * (i + 1) - STRIP_DISTANCE , (float)y + h }, IM_COL32(10, 10, 10, 255));
+			draw->AddRectFilled({ (float)x + (w + STRIP_DISTANCE) * i, (float)y }, { (float)x + (w + STRIP_DISTANCE) * (i + 1) - STRIP_DISTANCE , (float)y + h }, isLight ? IM_COL32(230, 230, 230, 255) : IM_COL32(10, 10, 10, 255));
 		}
 		else {
 			float y1 = (float)(y + ((h - ih) / 2));
@@ -294,7 +299,6 @@ void App::drawImageStrip()
 				ImVec2 t = { -ImageManagment::getInstance()->getTranslationX() * iw / zoom, -ImageManagment::getInstance()->getTranslationY() * ih / zoom};
 				ImVec2 q1 = { x1 + iw / 2 - viewWidth / imageWidth * iw / 2, y1 + ih / 2 - viewHeight / imageHeight * ih / 2 };
 				ImVec2 q2 = { q1.x + viewWidth / imageWidth * iw, q1.y + viewHeight / imageHeight * ih };
-				//draw->AddRect(q1, q2, IM_COL32(255, 255, 255, 255));
 
 				float angle = -ImageManagment::getInstance()->getAngle();
 
@@ -306,17 +310,12 @@ void App::drawImageStrip()
 				x2 = q2.x + t.x;
 				y2 = q2.y + t.y;
 				
-				//p1 = { x1 + t.x, y1 + t.y };
-				//p2 = { x2 + t.x, y1 + t.y };
-				//p3 = { x2 + t.x, y2 + t.y };
-				//p4 = { x1 + t.x, y2 + t.y };
-
 				ImVec2 p1 = { (float)((x1 - px) * cos(angle) - (y1 - py) * sin(angle) + px), (float)((x1 - px) * sin(angle) + (y1 - py) * cos(angle) + py) };
 				ImVec2 p2 = { (float)((x2 - px) * cos(angle) - (y1 - py) * sin(angle) + px), (float)((x2 - px) * sin(angle) + (y1 - py) * cos(angle) + py) };
 				ImVec2 p3 = { (float)((x2 - px) * cos(angle) - (y2 - py) * sin(angle) + px), (float)((x2 - px) * sin(angle) + (y2 - py) * cos(angle) + py) };
 				ImVec2 p4 = { (float)((x1 - px) * cos(angle) - (y2 - py) * sin(angle) + px), (float)((x1 - px) * sin(angle) + (y2 - py) * cos(angle) + py) };
 
-				draw->AddQuad(p1, p2, p3, p4, IM_COL32(255, 255, 255, 255), 2.0f);
+				draw->AddQuad(p1, p2, p3, p4, isLight ? IM_COL32(25, 25, 25, 255) : IM_COL32(255, 255, 255, 255), 2.0f);
 
 			}
 
@@ -328,9 +327,6 @@ void App::drawImageStrip()
 			break;
 		}
 		i++;
-	}
-	for (int i = 0; i < n; i++) {
-
 	}
 }
 void App::drawMenu()
@@ -434,6 +430,16 @@ void App::drawMenu()
 		
 		if (ImGui::BeginMenu("Options")) {
 			ImGui::Checkbox("Show image strip", &App::showStrip);
+			if (ImGui::Checkbox("Light mode", &isLight)) {
+				if (isLight) {
+					glClearColor(0.9, 0.9, 0.9, 1);
+					changeStyleWhite();
+				}
+				else {
+					glClearColor(0.1, 0.1, 0.1, 1);
+					changeStyleDark();
+				}
+			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Help")) {
@@ -476,6 +482,16 @@ void App::generateBufffer()
 
 	glGenBuffers(1, &buffer2);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer2);
+}
+void App::changeStyleWhite()
+{
+	ImGuiStyle& style = ImGui::GetStyle();
+	ImGui::StyleColorsLight(&style);
+}
+void App::changeStyleDark()
+{
+	ImGuiStyle& style = ImGui::GetStyle();
+	ImGui::StyleColorsDark(&style);
 }
 void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
