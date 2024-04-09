@@ -20,6 +20,8 @@ struct Image {
 	int rotation = 0;
 	bool flipX = false, flipY = false;
 	ImageShaderModification mod;
+	int saveWidth = 0, saveHeight = 0;
+	unsigned int channels = 0;
 };
 
 class ImageManagment
@@ -108,6 +110,8 @@ public:
 	void resetTranslation() { translationX = translationY = 0; }
 	void resetAll() {
 		getCurrentImage()->mod = ImageShaderModification();
+		getCurrentImage()->saveWidth = getCurrentImage()->w;
+		getCurrentImage()->saveHeight = getCurrentImage()->h;
 		resetZoom();
 		resetAngle();
 		resetTranslation();
@@ -133,8 +137,8 @@ enum SaveType {
 };
 
 // Can be called in a thread
-void saveImage(Image image, std::string newFilePath = std::string(), int type = PNG, int quality = 80);
-
+void saveImage(Image image, std::string newFilePath = std::string(), int type = PNG, bool transform = false, int quality = 80);
+unsigned char* transformImage(Image* image, unsigned char* data, int* width, int* height, int channels);
 void write_bin(const char* path, int width, int height, int channels, unsigned char* data);
 unsigned char* load_bin(const char* path, int* width, int* height, int* channels);
 

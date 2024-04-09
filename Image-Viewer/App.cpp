@@ -153,6 +153,7 @@ int App::start()
 void App::update()
 {
 	drawImage();
+	drawBoundingBox();
 	if (App::shouldToggleFullscreen) {
 		shouldToggleFullscreen = false;
 		if (isFullScreen) {
@@ -249,6 +250,30 @@ void App::drawImage()
 	shader->drawImageWithModification(currImage->texId, currImage);
 }
 
+void App::drawBoundingBox()
+{
+	ImDrawList* draw = ImGui::GetBackgroundDrawList();
+
+	currImage = ImageManagment::getInstance()->getCurrentImage();
+
+	float zoom = ImageManagment::getInstance()->getZoom();
+	int ih = currImage->saveHeight, iw = currImage->saveWidth;
+	double scale = min((double)viewHeight / (double)currImage->h, (double)viewWidth / (double)currImage->w);
+	iw = scale * iw;
+	ih = scale * ih;
+
+	float x = (viewWidth - iw) / 2;
+	float y = (viewHeight - ih) / 2;
+
+	float x1 = x;
+	float y1 = y;
+	float x2 = x1 + iw;
+	float y2 = y1 + ih;
+	ImVec2 p1 = { x1, y1 };
+	ImVec2 p2 = { x2, y2 };
+	draw->AddRect(p1, p2, isLight ? IM_COL32(10, 10, 10, 255) : IM_COL32(230, 230, 230, 255));
+}
+
 void App::drawImageStrip()
 {
 	ImDrawList* draw = ImGui::GetBackgroundDrawList();
@@ -339,18 +364,21 @@ void App::drawMenu()
 			{
 				if (FileDialog::openFile()) {
 					currentFile = FileDialog::sFilePath;
+					ImageManagment::getInstance()->resetAll();
 					ImageManagment::getInstance()->setImagesPath(currentFile);
 				}
 			}
 			if (ImGui::BeginMenu("Save", ImageManagment::getInstance()->getCurrentImage() != nullptr))
 			{
+				ImGui::InputInt("Width", (&ImageManagment::getInstance()->getCurrentImage()->saveWidth));
+				ImGui::InputInt("Height", (&ImageManagment::getInstance()->getCurrentImage()->saveHeight));
 				if (ImGui::MenuItem("Save as PNG")) {
 					if (FileDialog::saveFile(L"*.png")) {
 						currentFile = FileDialog::sFilePath;
 						if (!currentFile.ends_with(".png")) {
 							currentFile += ".png";
 						}
-						saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, PNG);
+						saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, PNG, saveWithTransforms);
 					}
 				}
 				if (ImGui::MenuItem("Save as BMP")) {
@@ -359,7 +387,7 @@ void App::drawMenu()
 						if (!currentFile.ends_with(".bmp")) {
 							currentFile += ".bmp";
 						}
-						saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, BMP);
+						saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, BMP, saveWithTransforms);
 					}
 				}
 				if (ImGui::BeginMenu("Save as JPG")) {
@@ -370,7 +398,7 @@ void App::drawMenu()
 							if (!currentFile.ends_with(".jpg")) {
 								currentFile += ".jpg";
 							}
-							saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, JPG, quality);
+							saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, JPG, saveWithTransforms, quality);
 						}
 					}
 					ImGui::EndMenu();
@@ -381,10 +409,9 @@ void App::drawMenu()
 						if (!currentFile.ends_with(".bin")) {
 							currentFile += ".bin";
 						}
-						saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, BIN);
+						saveImage(*ImageManagment::getInstance()->getCurrentImage(), currentFile, BIN, saveWithTransforms);
 					}
 				}
-
 				ImGui::EndMenu();
 			}
 			ImGui::Separator();
@@ -430,6 +457,10 @@ void App::drawMenu()
 		
 		if (ImGui::BeginMenu("Options")) {
 			ImGui::Checkbox("Show image strip", &App::showStrip);
+			ImGui::Separator();
+			ImGui::Checkbox("Save with transformations", &saveWithTransforms);
+			ImGui::Text("Saving with the transformation saves the image as shown in the image preview");
+			ImGui::Separator();
 			if (ImGui::Checkbox("Light mode", &isLight)) {
 				if (isLight) {
 					glClearColor(0.9, 0.9, 0.9, 1);
@@ -493,6 +524,7 @@ void App::changeStyleDark()
 	ImGuiStyle& style = ImGui::GetStyle();
 	ImGui::StyleColorsDark(&style);
 }
+
 void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	if (action == GLFW_PRESS && mods & GLFW_MOD_CONTROL) {

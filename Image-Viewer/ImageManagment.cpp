@@ -106,6 +106,9 @@ void ImageManagment::loadImage(Image* image) {
 	image->texId = texture;
 	image->w = width;
 	image->h = height;
+	image->saveWidth = width;
+	image->saveHeight = height;
+	image->channels = num_channels;
 
 }
 
@@ -154,12 +157,12 @@ Image* ImageManagment::getImageAt(int i) {
 }
 void ImageManagment::increaseZoom()
 {
-	zoom += (zoom-0.85f) / 10;
+	zoom += 0.1f;
 }
 void ImageManagment::decreaseZoom()
 {
-	if(zoom > 0.85f)
-		zoom -= (zoom - 0.85f) / 10;
+	if(zoom > 0.65f)
+		zoom -= 0.1f;
 }
 void ImageManagment::rotateCurrentImage(int dir)
 {
@@ -290,7 +293,7 @@ void ImageManagment::setImagesPath(std::string imagePath)
 	shouldOpenImageMutex.unlock();
 }
 
-void saveImage(Image image, std::string newFilePath, int type, int quality)
+void saveImage(Image image, std::string newFilePath, int type, bool transform, int quality)
 {
 	if (newFilePath.empty())
 		newFilePath = image.imagePath;
@@ -329,25 +332,80 @@ void saveImage(Image image, std::string newFilePath, int type, int quality)
 	if (image.mod.saturation != 1.0 || image.mod.brightness != 1.0 || image.mod.hue != 0.0) {
 		hsvEdit(width, height, data, image.mod.hue, image.mod.saturation, image.mod.brightness, num_channels);
 	}
+	unsigned char* tdata = nullptr;
+	if (transform)
+		tdata = transformImage(&image, data, &width, &height, num_channels);
+	else
+		tdata = data;
+
 	switch (type)
 	{
 	case PNG:
-		stbi_write_png(newFilePath.c_str(), width, height, num_channels, data, width* num_channels);
+		stbi_write_png(newFilePath.c_str(), width, height, num_channels, tdata, width* num_channels);
 		break;
 	case JPG:
-		stbi_write_jpg(newFilePath.c_str(), width, height, num_channels, data, quality);
+		stbi_write_jpg(newFilePath.c_str(), width, height, num_channels, tdata, quality);
 		break;
 	case BMP:
-		stbi_write_bmp(newFilePath.c_str(), width, height, num_channels, data);
+		stbi_write_bmp(newFilePath.c_str(), width, height, num_channels, tdata);
 		break;
 	case BIN:
-		write_bin(newFilePath.c_str(), width, height, num_channels, data);
+		write_bin(newFilePath.c_str(), width, height, num_channels, tdata);
 		break;
 	default:
 		break;
 	}
-
+	if (transform)
+		delete[] tdata;
 	stbi_image_free(data);
+}
+
+unsigned char* transformImage(Image* image, unsigned char* data, int* width, int* height, int channels)
+{
+	int ow = image->w;
+	int oh = image->h;
+	int nw = *width = image->saveWidth;
+	int nh = *height = image->saveHeight;
+
+	float cosA = cos(-ImageManagment::getInstance()->getAngle());
+	float sinA = sin(-ImageManagment::getInstance()->getAngle());
+
+
+	float tx = -ImageManagment::getInstance()->getTranslationX() * ow + abs(ow - nw) / 2;
+	float ty = -ImageManagment::getInstance()->getTranslationY() * oh + abs(oh - nh) / 2;
+	//translacija je dobra
+
+	float zoom = ImageManagment::getInstance()->getZoom();
+
+	unsigned char* tdata = new unsigned char[nw * nh * channels];
+	int px = 0, py = 0, nx, ny;
+	for (int x = 0; x < nw; x++) {
+		px = x - nw / 2;
+
+		for (int y = 0; y < nh; y++) {
+			py = y - nh / 2;
+
+			float fnx = px * cosA - py * sinA + nw / 2 + tx;
+			float fny = px * sinA + py * cosA + nh / 2 + ty;
+
+
+			//fnx -= ow / 2.0;
+			//fny -= oh / 2.0;
+			//fnx /= zoom;
+			//fny /= zoom;
+			//fnx += ow / 2.0;
+			//fny += oh / 2.0;
+
+			nx = fnx;
+			ny = fny;
+
+			if (nx >= 0 && nx < ow && ny >= 0 && ny < oh)
+				for (int c = 0; c < channels; c++) {
+						tdata[y * nw * channels + x * channels + c] = data[ny * ow * channels + nx * channels + c];
+				}
+		}
+	}
+	return tdata;
 }
 
 void write_bin(const char* path, int width, int height, int channels, unsigned char* data)

@@ -38,6 +38,7 @@ public:
 	void update();
 
 	void drawImage();
+	void drawBoundingBox();
 	void drawImageStrip();
 	void drawMenu();
 
@@ -46,6 +47,7 @@ public:
 
 	void changeStyleWhite();
 	void changeStyleDark();
+
 private:
 	Shader* shader;
 	Image* currImage;
@@ -58,6 +60,7 @@ private:
 	float imageX = 0, imageY = 0, imageWidth = 0, imageHeight = 0, viewWidth = 0, viewHeight = 0;
 	bool isFullScreen = false;
 	bool isLight = false;
+	bool saveWithTransforms = true;
 };
 void mouseClick(GLFWwindow* window, int button, int action, int mods);
 void keyPressed(GLFWwindow* window, int key, int scancode, int action, int mods);
