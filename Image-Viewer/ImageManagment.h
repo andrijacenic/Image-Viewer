@@ -11,7 +11,7 @@
 #include <iostream>
 #include<fstream>
 namespace fs = std::filesystem;
-#define NUMBER_OF_LOADED_IMAGES 6
+#define NUMBER_OF_LOADED_IMAGES 2
 struct Image {
 	unsigned int texId = -1;
 	unsigned int w = 0, h = 0;
@@ -109,12 +109,14 @@ public:
 	}
 	void resetTranslation() { translationX = translationY = 0; }
 	void resetAll() {
-		getCurrentImage()->mod = ImageShaderModification();
-		getCurrentImage()->saveWidth = getCurrentImage()->w;
-		getCurrentImage()->saveHeight = getCurrentImage()->h;
 		resetZoom();
 		resetAngle();
 		resetTranslation();
+		if (!getCurrentImage())
+			return;
+		getCurrentImage()->mod = ImageShaderModification();
+		getCurrentImage()->saveWidth = getCurrentImage()->w;
+		getCurrentImage()->saveHeight = getCurrentImage()->h;
 	}
 	
 	void rotateCurrentImage(int dir);

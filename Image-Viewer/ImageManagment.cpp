@@ -161,7 +161,7 @@ void ImageManagment::increaseZoom()
 }
 void ImageManagment::decreaseZoom()
 {
-	if(zoom > 0.65f)
+	if(zoom > 0.25f)
 		zoom -= 0.1f;
 }
 void ImageManagment::rotateCurrentImage(int dir)
@@ -187,6 +187,7 @@ void ImageManagment::rotateCurrentImage(int dir)
 	int w = images[selectedIndex].w;
 	images[selectedIndex].w = images[selectedIndex].h;
 	images[selectedIndex].h = w;
+	resetAll();
 }
 void ImageManagment::flipImageX(Image *image)
 {
@@ -362,46 +363,67 @@ void saveImage(Image image, std::string newFilePath, int type, bool transform, i
 
 unsigned char* transformImage(Image* image, unsigned char* data, int* width, int* height, int channels)
 {
-	int ow = image->w;
-	int oh = image->h;
+	int originalWidth = image->w;
+	int originalHeight = image->h;
 	int nw = *width = image->saveWidth;
 	int nh = *height = image->saveHeight;
 
-	float cosA = cos(-ImageManagment::getInstance()->getAngle());
-	float sinA = sin(-ImageManagment::getInstance()->getAngle());
+	float angle = ImageManagment::getInstance()->getAngle();
 
+	float cosA = cos(-angle);
+	float sinA = sin(-angle);
 
-	float tx = -ImageManagment::getInstance()->getTranslationX() * ow + abs(ow - nw) / 2;
-	float ty = -ImageManagment::getInstance()->getTranslationY() * oh + abs(oh - nh) / 2;
-	//translacija je dobra
+	float translationX = -ImageManagment::getInstance()->getTranslationX() * originalWidth;
+	float translationY = -ImageManagment::getInstance()->getTranslationY() * originalHeight;
 
-	float zoom = ImageManagment::getInstance()->getZoom();
+	float zoom = 1.0/ImageManagment::getInstance()->getZoom();
+
+	int zoomedWidth = zoom * originalWidth;
+	int zoomedHeight = zoom * originalHeight;
 
 	unsigned char* tdata = new unsigned char[nw * nh * channels];
-	int px = 0, py = 0, nx, ny;
-	for (int x = 0; x < nw; x++) {
-		px = x - nw / 2;
 
-		for (int y = 0; y < nh; y++) {
-			py = y - nh / 2;
+	std::fill(tdata, &tdata[nw * nh * channels], 0);
 
-			float fnx = px * cosA - py * sinA + nw / 2 + tx;
-			float fny = px * sinA + py * cosA + nh / 2 + ty;
+	int centeredX, centeredY;
+	int tempX, tempY;
 
+	int finalX, finalY;
+	for (int y = 0; y < nh; y++) {
+		centeredY = y + (zoomedHeight - nh) / 2;
+		for (int x = 0; x < nw; x++) {
+			centeredX = x + (zoomedWidth - nw) / 2;
 
-			//fnx -= ow / 2.0;
-			//fny -= oh / 2.0;
-			//fnx /= zoom;
-			//fny /= zoom;
-			//fnx += ow / 2.0;
-			//fny += oh / 2.0;
+			//centeredX and centeredY representet the image shifted so that the cutout of the image is in the middle of the screen
 
-			nx = fnx;
-			ny = fny;
+			tempX = centeredX + translationX;
+			tempY = centeredY + translationY;
 
-			if (nx >= 0 && nx < ow && ny >= 0 && ny < oh)
+			//Adding the translation
+
+			tempX -= zoomedWidth / 2;
+			tempY -= zoomedHeight / 2;
+
+			// Move it so that the middle of the image is the center of rotation
+
+			finalX = tempX * cosA - tempY * sinA;
+			finalY = tempX * sinA + tempY * cosA;
+
+			// The rotation
+
+			finalX *= zoom;
+			finalY *= zoom;
+
+			//Applying the zoom
+
+			finalX += originalWidth / 2;
+			finalY += originalHeight / 2;
+
+			//Going back so that the begining of the image would be (0, 0)
+
+			if (finalX >= 0 && finalX < originalWidth && finalY >= 0 && finalY < originalHeight)
 				for (int c = 0; c < channels; c++) {
-						tdata[y * nw * channels + x * channels + c] = data[ny * ow * channels + nx * channels + c];
+						tdata[y * nw * channels + x * channels + c] = data[finalY * originalWidth * channels + finalX * channels + c];
 				}
 		}
 	}
@@ -410,12 +432,12 @@ unsigned char* transformImage(Image* image, unsigned char* data, int* width, int
 
 void write_bin(const char* path, int width, int height, int channels, unsigned char* data)
 {
-	//	resolution x(4 bajta) - rezolucija slike x(recimo 1920)
-	//	resolution y(4 bajta) - rezolucija slike y(recimo 1080)
-	//	type(4 bajta) - tip(0 inicijalno)
-	//	rgb(4 bajta) - 0 za 24 bita, 1 za 32 bita rgb
-	//	xor (4 bajta) - tip kodiranja - sifriranja piksela(ako je 0 nema kodiranja)
-	//	len(4 bajta) - ukupna duzina fajla(ukljucujuci i ovaj header duzine 24 bajta)
+	//	resolution x(4 bajta)	- rezolucija slike x(recimo 1920)
+	//	resolution y(4 bajta)	- rezolucija slike y(recimo 1080)
+	//	type(4 bajta)			- tip(0 inicijalno)
+	//	rgb(4 bajta)			- 0 za 24 bita, 1 za 32 bita rgb
+	//	xor (4 bajta)			- tip kodiranja - sifriranja piksela(ako je 0 nema kodiranja)
+	//	len(4 bajta)			- ukupna duzina fajla(ukljucujuci i ovaj header duzine 24 bajta)
 	std::ofstream writer(path, std::ios::out | std::ios::binary);
 	if (!writer.is_open()) {
 		return; // TODO

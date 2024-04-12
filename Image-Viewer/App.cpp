@@ -153,7 +153,8 @@ int App::start()
 void App::update()
 {
 	drawImage();
-	drawBoundingBox();
+	if(saveWithTransforms)
+		drawBoundingBox();
 	if (App::shouldToggleFullscreen) {
 		shouldToggleFullscreen = false;
 		if (isFullScreen) {
@@ -213,8 +214,8 @@ void App::drawImage()
 	float x = (viewWidth - iw) / 2;
 	float y = (viewHeight - ih) / 2;
 
-	float x1 = x;
-	float y1 = y;
+	float x1 = x + t.x;
+	float y1 = y + t.y;
 	imageX = x1;
 	imageY = y1;
 	float x2 = x1 + iw;
@@ -230,10 +231,10 @@ void App::drawImage()
 	ImVec2 p3 = { (float) ((x2 - px) * cos(angle) - (y2 - py) * sin(angle) + px), (float)((x2 - px) * sin(angle) + (y2 - py) * cos(angle) + py) };
 	ImVec2 p4 = { (float)((x1 - px) * cos(angle) - (y2 - py) * sin(angle) + px), (float) ((x1 - px) * sin(angle) + (y2 - py) * cos(angle) + py) };
 	
-	p1 = { p1.x + t.x, p1.y + t.y };
-	p2 = { p2.x + t.x, p2.y + t.y };
-	p3 = { p3.x + t.x, p3.y + t.y };
-	p4 = { p4.x + t.x, p4.y + t.y };
+	//p1 = { p1.x + t.x, p1.y + t.y };
+	//p2 = { p2.x + t.x, p2.y + t.y };
+	//p3 = { p3.x + t.x, p3.y + t.y };
+	//p4 = { p4.x + t.x, p4.y + t.y };
 
 	currImage->mod.positions[0].x = p1.x / rw * 2.0f - 1.0f;
 	currImage->mod.positions[0].y = -p1.y / rh * 2.0f + 1.0f;
@@ -255,6 +256,8 @@ void App::drawBoundingBox()
 	ImDrawList* draw = ImGui::GetBackgroundDrawList();
 
 	currImage = ImageManagment::getInstance()->getCurrentImage();
+	if (!currImage)
+		return;
 
 	float zoom = ImageManagment::getInstance()->getZoom();
 	int ih = currImage->saveHeight, iw = currImage->saveWidth;
@@ -370,8 +373,10 @@ void App::drawMenu()
 			}
 			if (ImGui::BeginMenu("Save", ImageManagment::getInstance()->getCurrentImage() != nullptr))
 			{
-				ImGui::InputInt("Width", (&ImageManagment::getInstance()->getCurrentImage()->saveWidth));
-				ImGui::InputInt("Height", (&ImageManagment::getInstance()->getCurrentImage()->saveHeight));
+				if (saveWithTransforms) {
+					ImGui::InputInt("Width", (&ImageManagment::getInstance()->getCurrentImage()->saveWidth));
+					ImGui::InputInt("Height", (&ImageManagment::getInstance()->getCurrentImage()->saveHeight));
+				}
 				if (ImGui::MenuItem("Save as PNG")) {
 					if (FileDialog::saveFile(L"*.png")) {
 						currentFile = FileDialog::sFilePath;
@@ -459,7 +464,9 @@ void App::drawMenu()
 			ImGui::Checkbox("Show image strip", &App::showStrip);
 			ImGui::Separator();
 			ImGui::Checkbox("Save with transformations", &saveWithTransforms);
-			ImGui::Text("Saving with the transformation saves the image as shown in the image preview");
+			ImGui::Text("Saving with the transformation saves the image as shown in the image preview.");
+			ImGui::Text("The area that would be saved is in the rectangle in the image preview.");
+			ImGui::Text("Images saved with the transformations will lose quality.");
 			ImGui::Separator();
 			if (ImGui::Checkbox("Light mode", &isLight)) {
 				if (isLight) {
